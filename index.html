@@ -13,49 +13,69 @@
     @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Playfair+Display:wght@700;900&display=swap');
     *{box-sizing:border-box;margin:0;padding:0}
     html,body{height:100%;background:#080808}
-    body{color:#e5e5e5;font-family:'IBM Plex Mono',monospace;overflow-x:hidden}
+    body{color:#e5e5e5;font-family:'IBM Plex Mono',monospace;overflow-x:hidden;-webkit-text-size-adjust:100%}
     ::-webkit-scrollbar{width:3px}::-webkit-scrollbar-track{background:#111}::-webkit-scrollbar-thumb{background:#333}
 
     /* ── HEADER ── */
-    .hd{background:#0a0a0a;border-bottom:1px solid #1a1a1a;padding:0 24px;position:sticky;top:0;z-index:100}
-    .ht{display:flex;align-items:center;justify-content:space-between;padding:12px 0 0}
-    .logo-wrap{display:flex;flex-direction:column;gap:2px}
-    .lt{font-family:'Playfair Display',serif;font-size:22px;font-weight:900;color:#fff;letter-spacing:0.08em}
+    .hd{background:#0a0a0a;border-bottom:1px solid #1a1a1a;padding:0 16px;position:sticky;top:0;z-index:100}
+    .ht{display:flex;align-items:center;justify-content:space-between;padding:10px 0 0}
+    .logo-wrap{display:flex;flex-direction:column;gap:1px}
+    .lt{font-family:'Playfair Display',serif;font-size:20px;font-weight:900;color:#fff;letter-spacing:0.08em}
     .lt span{color:#F7931A}
-    .ls{font-size:8px;letter-spacing:0.3em;color:#F7931A;text-transform:uppercase;font-weight:500}
-    .ld{width:7px;height:7px;border-radius:50%;background:#00D4AA;animation:pu 2s infinite;display:inline-block;margin-right:6px;box-shadow:0 0 8px #00D4AA}
+    .ls{font-size:7px;letter-spacing:0.25em;color:#F7931A;text-transform:uppercase;font-weight:500}
+    .ld{width:6px;height:6px;border-radius:50%;background:#00D4AA;animation:pu 2s infinite;display:inline-block;margin-right:5px;box-shadow:0 0 6px #00D4AA}
     @keyframes pu{0%,100%{opacity:1}50%{opacity:0.3}}
-    .htime{font-size:10px;color:#444;font-family:'IBM Plex Mono',monospace}
+    .htime{font-size:9px;color:#444;font-family:'IBM Plex Mono',monospace;display:none}
+    @media(min-width:600px){.htime{display:block}}
     .tabs{display:flex;overflow-x:auto;margin-top:4px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
     .tabs::-webkit-scrollbar{display:none}
-    .tab{background:none;border:none;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;padding:10px 16px;color:#555;border-bottom:2px solid transparent;transition:all 0.15s;white-space:nowrap}
+    .tab{background:none;border:none;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;padding:9px 12px;color:#555;border-bottom:2px solid transparent;transition:all 0.15s;white-space:nowrap;-webkit-tap-highlight-color:transparent}
     .tab:hover{color:#F7931A}.tab.active{color:#F7931A;border-bottom-color:#F7931A}
 
     /* ── TICKER ── */
-    .tkb{overflow:hidden;border-bottom:1px solid #1a1a1a;background:#050505;height:30px;display:flex;align-items:center}
+    .tkb{overflow:hidden;border-bottom:1px solid #1a1a1a;background:#050505;height:28px;display:flex;align-items:center}
     .tki{display:flex;white-space:nowrap;animation:sc 40s linear infinite}
     @keyframes sc{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
-    .ti{display:flex;align-items:center;gap:6px;padding:0 22px;font-size:10px;border-right:1px solid #1a1a1a}
+    .ti{display:flex;align-items:center;gap:5px;padding:0 16px;font-size:9px;border-right:1px solid #1a1a1a}
     .ts{color:#666;font-weight:600;letter-spacing:0.06em}
     .tp{color:#aaa}
     .pos{color:#00D4AA}.neg{color:#FF3B5C}
     .btc-price{color:#F7931A!important;font-weight:700!important}
 
     /* ── LAYOUT ── */
-    .cnt{padding:20px 24px;max-width:1400px;margin:0 auto}
-    .card{background:#0f0f0f;border:1px solid #1f1f1f;border-radius:4px;padding:18px;transition:border-color 0.2s}
-    .card:hover{border-color:#2a2a2a}
+    .cnt{padding:12px 14px;max-width:1400px;margin:0 auto}
+    @media(min-width:768px){.cnt{padding:20px 24px}}
+    .card{background:#0f0f0f;border:1px solid #1f1f1f;border-radius:6px;padding:14px;transition:border-color 0.2s}
+    @media(min-width:768px){.card{padding:18px}}
     .card-btc{border-color:#F7931A22}
-    .ct{font-size:8px;letter-spacing:0.15em;text-transform:uppercase;color:#555;margin-bottom:10px}
+    .ct{font-size:8px;letter-spacing:0.12em;text-transform:uppercase;color:#555;margin-bottom:8px}
     .ct-orange{color:#F7931A}
-    .wv{font-family:'Playfair Display',serif;font-size:44px;font-weight:700;color:#fff;line-height:1}
-    .sv{font-family:'Playfair Display',serif;font-size:24px;font-weight:700;color:#fff}
-    .g2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-    .g3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
-    .g4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+
+    /* ── WEALTH VALUE — GRAND ET LISIBLE ── */
+    .wealth-card{background:linear-gradient(135deg,#0f0f0f 0%,#111008 100%);border:1px solid #2a2a1a;border-radius:8px;padding:20px 18px;position:relative;overflow:hidden}
+    .wealth-label{font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:#666;margin-bottom:6px}
+    .wv{font-family:'Playfair Display',serif;font-size:52px;font-weight:900;color:#fff;line-height:1;letter-spacing:-0.02em}
+    @media(min-width:768px){.wv{font-size:68px}}
+    .wealth-sub{display:flex;align-items:center;gap:14px;margin-top:10px;flex-wrap:wrap}
+    .wealth-stat{display:flex;flex-direction:column;gap:2px}
+    .wealth-stat-label{font-size:7px;color:#444;text-transform:uppercase;letter-spacing:0.1em}
+    .wealth-stat-val{font-size:13px;font-weight:600;font-family:'IBM Plex Mono',monospace}
+
+    .sv{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:#fff}
+    .g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .g3{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    @media(min-width:900px){.g3{grid-template-columns:repeat(3,1fr);gap:14px}}
+    .g4{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    @media(min-width:900px){.g4{grid-template-columns:repeat(4,1fr)}}
+
+    /* ── STAT CARDS ── */
+    .stat-card{background:#0f0f0f;border:1px solid #1f1f1f;border-radius:6px;padding:12px 14px}
+    .stat-card-label{font-size:7px;letter-spacing:0.12em;text-transform:uppercase;color:#555;margin-bottom:4px}
+    .stat-card-val{font-size:20px;font-weight:700;font-family:'Playfair Display',serif;color:#fff}
+    @media(min-width:768px){.stat-card-val{font-size:24px}}
 
     /* ── BADGES ── */
-    .badge{display:inline-block;padding:2px 6px;border-radius:2px;font-size:8px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em}
+    .badge{display:inline-block;padding:2px 5px;border-radius:2px;font-size:8px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em}
     .ba{background:rgba(0,212,170,0.12);color:#00D4AA}
     .be{background:rgba(74,158,255,0.15);color:#4A9EFF}
     .bc{background:rgba(247,147,26,0.15);color:#F7931A}
@@ -64,56 +84,40 @@
 
     /* ── TABLE ── */
     .tbl{width:100%;border-collapse:collapse}
-    .tbl th{font-size:8px;letter-spacing:0.08em;text-transform:uppercase;color:#444;padding:8px 10px;text-align:right;border-bottom:1px solid #1a1a1a;font-family:'IBM Plex Mono',monospace}
+    .tbl th{font-size:8px;letter-spacing:0.07em;text-transform:uppercase;color:#444;padding:7px 8px;text-align:right;border-bottom:1px solid #1a1a1a;font-family:'IBM Plex Mono',monospace}
     .tbl th:first-child{text-align:left}
-    .tbl td{padding:10px 10px;text-align:right;border-bottom:1px solid #111;font-size:11px;font-family:'IBM Plex Mono',monospace}
+    .tbl td{padding:9px 8px;text-align:right;border-bottom:1px solid #111;font-size:10px;font-family:'IBM Plex Mono',monospace}
     .tbl td:first-child{text-align:left}.tbl tr:hover td{background:#131313}
+    .tbl-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
 
     /* ── BUTTONS ── */
-    .btn{background:#F7931A;border:none;border-radius:3px;padding:7px 16px;font-size:10px;font-weight:700;color:#000;cursor:pointer;letter-spacing:0.08em;text-transform:uppercase;font-family:'IBM Plex Mono',monospace;transition:all 0.15s}
-    .btn:hover{background:#e8841a;transform:translateY(-1px)}
-    .btn-green{background:#00D4AA;color:#000}
-    .btn-green:hover{background:#00bfa0}
-    .btsm{background:none;border:1px solid #2a2a2a;border-radius:3px;padding:5px 12px;font-size:10px;color:#666;cursor:pointer;font-family:'IBM Plex Mono',monospace;transition:all 0.15s}
+    .btn{background:#F7931A;border:none;border-radius:4px;padding:8px 16px;font-size:10px;font-weight:700;color:#000;cursor:pointer;letter-spacing:0.08em;text-transform:uppercase;font-family:'IBM Plex Mono',monospace;transition:all 0.15s;-webkit-tap-highlight-color:transparent}
+    .btn:active{transform:scale(0.97)}
+    .btsm{background:none;border:1px solid #2a2a2a;border-radius:3px;padding:6px 12px;font-size:9px;color:#666;cursor:pointer;font-family:'IBM Plex Mono',monospace;transition:all 0.15s;-webkit-tap-highlight-color:transparent}
     .btsm:hover{color:#F7931A;border-color:#F7931A}
-    .btdel{background:rgba(255,59,92,0.08);border:1px solid rgba(255,59,92,0.15);color:#FF3B5C;padding:3px 8px;border-radius:2px;font-size:9px;cursor:pointer;font-family:'IBM Plex Mono',monospace}
+    .btdel{background:rgba(255,59,92,0.08);border:1px solid rgba(255,59,92,0.15);color:#FF3B5C;padding:4px 8px;border-radius:3px;font-size:9px;cursor:pointer;font-family:'IBM Plex Mono',monospace}
 
     /* ── FORM ── */
-    .fi{background:#141414;border:1px solid #222;border-radius:3px;padding:8px 10px;font-size:11px;color:#ccc;font-family:'IBM Plex Mono',monospace;outline:none;width:100%;transition:border-color 0.15s}
+    .fi{background:#141414;border:1px solid #222;border-radius:3px;padding:9px 10px;font-size:14px;color:#ccc;font-family:'IBM Plex Mono',monospace;outline:none;width:100%;transition:border-color 0.15s;-webkit-appearance:none}
     .fi:focus{border-color:#F7931A}
     .fl{font-size:8px;color:#555;letter-spacing:0.1em;text-transform:uppercase;display:block;margin-bottom:4px}
     .fg{display:flex;flex-direction:column;gap:4px}
 
     /* ── MISC ── */
-    .sep{width:1px;background:#222;align-self:stretch;margin:0 8px}
-    .empty{text-align:center;color:#444;font-size:11px;padding:32px 0}
+    .sep{width:1px;background:#222;align-self:stretch;margin:0 6px}
+    .empty{text-align:center;color:#444;font-size:11px;padding:28px 0}
     .spin{display:inline-block;width:16px;height:16px;border:2px solid #1f1f1f;border-top-color:#F7931A;border-radius:50%;animation:sp 0.7s linear infinite}
     @keyframes sp{to{transform:rotate(360deg)}}
     .pr{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #111}
     .pr:last-child{border-bottom:none}
-    .dz{border:2px dashed #222;border-radius:4px;padding:32px;text-align:center;cursor:pointer;transition:all 0.2s;margin-bottom:14px}
+    .dz{border:2px dashed #222;border-radius:6px;padding:28px 20px;text-align:center;cursor:pointer;transition:all 0.2s;margin-bottom:14px}
     .dz:hover,.dz.over{border-color:#F7931A;background:rgba(247,147,26,0.03)}
-    .tag-live{font-size:8px;color:#00D4AA;background:rgba(0,212,170,0.1);padding:1px 5px;border-radius:2px;margin-left:4px}
-    .tag-btc-live{font-size:8px;color:#F7931A;background:rgba(247,147,26,0.1);padding:1px 5px;border-radius:2px;margin-left:4px}
-    .tag-stale{font-size:8px;color:#444;background:rgba(255,255,255,0.04);padding:1px 5px;border-radius:2px;margin-left:4px}
-
-    /* ── BITCOIN ACCENT ELEMENTS ── */
-    .btc-glow{box-shadow:0 0 20px rgba(247,147,26,0.08)}
-    .orange-bar{height:2px;background:linear-gradient(90deg,#F7931A,#00D4AA);border-radius:1px;margin-bottom:12px}
-    .stat-orange{color:#F7931A;font-family:'Playfair Display',serif;font-size:24px;font-weight:700}
-
-    /* ── FOOTER ── */
-    .footer{border-top:1px solid #141414;padding:14px 24px;text-align:center;font-size:9px;color:#2a2a2a;letter-spacing:0.1em}
+    .tag-live{font-size:7px;color:#00D4AA;background:rgba(0,212,170,0.1);padding:1px 4px;border-radius:2px;margin-left:3px}
+    .tag-btc-live{font-size:7px;color:#F7931A;background:rgba(247,147,26,0.1);padding:1px 4px;border-radius:2px;margin-left:3px}
+    .tag-stale{font-size:7px;color:#444;background:rgba(255,255,255,0.04);padding:1px 4px;border-radius:2px;margin-left:3px}
+    .orange-bar{height:2px;background:linear-gradient(90deg,#F7931A,#00D4AA);border-radius:1px;margin-bottom:14px}
+    .footer{border-top:1px solid #141414;padding:12px 16px;text-align:center;font-size:8px;color:#2a2a2a;letter-spacing:0.1em}
     .footer span{color:#F7931A}
-
-    /* ── RESPONSIVE ── */
-    @media(max-width:768px){
-      .g2,.g3{grid-template-columns:1fr}
-      .g4{grid-template-columns:1fr 1fr}
-      .wv{font-size:34px}
-      .cnt{padding:12px 14px}
-      .hd{padding:0 14px}
-    }
   </style>
 </head>
 <body>
@@ -404,85 +408,112 @@ function renderDashboard(){
   const gainers=[...dp].sort((a,b)=>b.dpct-a.dpct).filter(x=>x.dpct>0).slice(0,5);
   const losers=[...dp].sort((a,b)=>a.dpct-b.dpct).filter(x=>x.dpct<0).slice(0,5);
 
-  // BTC dominance in portfolio
-  const btcVal=gV(S.pos.find(p=>p.assets?.ticker==='BTC')||{quantity:0,current_price:0,assets:{ticker:'BTC'}});
+  const btcVal=gV(S.pos.find(p=>p.assets?.ticker==='BTC')||{quantity:0,assets:{ticker:'BTC'}});
   const btcPct=T>0?btcVal/T*100:0;
 
   document.getElementById('cnt').innerHTML=`
-<div style="display:grid;gap:16px">
+<div style="display:grid;gap:12px">
   <div class="orange-bar"></div>
 
-  <div style="display:grid;grid-template-columns:1fr auto;gap:14px">
-    <div class="card btc-glow" style="position:relative;overflow:hidden">
-      <div style="position:absolute;inset:0;background-image:linear-gradient(rgba(247,147,26,0.02) 1px,transparent 1px),linear-gradient(90deg,rgba(247,147,26,0.02) 1px,transparent 1px);background-size:40px 40px;pointer-events:none"></div>
-      <div class="ct">Valeur Nette du Patrimoine</div>
-      <div class="wv">${fe(T)}</div>
-      <div style="display:flex;align-items:center;gap:16px;margin-top:12px;flex-wrap:wrap">
-        <div><div style="font-size:8px;color:#444;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:2px">Var. Journalière</div>${pc(dP,13)}</div>
-        <div class="sep" style="height:24px"></div>
-        <div><div style="font-size:8px;color:#444;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:2px">Gain Latent</div><span style="font-size:14px;font-weight:600;color:${gain>=0?'#00D4AA':'#FF3B5C'}">${gain>=0?'+':''}${fe(gain)}</span></div>
-        <div class="sep" style="height:24px"></div>
-        <div><div style="font-size:8px;color:#444;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:2px">Perf. Totale</div>${pc(gainPct,13)}</div>
-        <div class="sep" style="height:24px"></div>
-        <div><div style="font-size:8px;color:#F7931A;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:2px">₿ BTC Exposure</div><span style="font-size:13px;font-weight:600;color:#F7931A">${btcPct.toFixed(1)}% — ${fe(btcVal)}</span></div>
-        <div style="margin-left:auto;font-size:9px;color:#333">${S.btc>0?`₿ <span style="color:#F7931A;font-weight:700">${f(S.btc,0)}€</span>`:'<span class="spin" style="width:10px;height:10px;border-top-color:#F7931A"></span>'}</div>
+  <!-- WEALTH CARD -->
+  <div class="wealth-card">
+    <div class="wealth-label">Valeur Nette du Patrimoine</div>
+    <div class="wv" id="wealth-val">${fe(T)}</div>
+    <div class="wealth-sub">
+      <div class="wealth-stat">
+        <div class="wealth-stat-label">Var. Journalière</div>
+        <div class="wealth-stat-val">${pc(dP,14)} <span style="font-size:12px;color:${dP>=0?'#00D4AA':'#FF3B5C'};font-weight:600">${dP>=0?'+':''}${fe(T-(y?y.total_value:T))}</span></div>
       </div>
-    </div>
-    <div class="g4" style="min-width:240px">
-      ${[['Mensuel',mP,null],['Annuel',aP,null],['Cost Basis',null,fe(cost)],['Positions',null,S.pos.length]].map(([l,v,r])=>`
-      <div class="card" style="padding:12px 14px">
-        <div class="ct" style="margin-bottom:4px">${l}</div>
-        ${v!==null?pc(v,20):`<span style="font-size:18px;font-weight:700;color:#fff;font-family:'Playfair Display',serif">${r}</span>`}
-      </div>`).join('')}
+      <div class="sep" style="height:28px"></div>
+      <div class="wealth-stat">
+        <div class="wealth-stat-label">Gain Latent</div>
+        <div class="wealth-stat-val" style="color:${gain>=0?'#00D4AA':'#FF3B5C'}">${gain>=0?'+':''}${fe(gain)}</div>
+      </div>
+      <div class="sep" style="height:28px"></div>
+      <div class="wealth-stat">
+        <div class="wealth-stat-label">Perf. Totale</div>
+        <div class="wealth-stat-val">${pc(gainPct,14)}</div>
+      </div>
+      <div class="sep" style="height:28px"></div>
+      <div class="wealth-stat">
+        <div class="wealth-stat-label" style="color:#F7931A">₿ BTC</div>
+        <div class="wealth-stat-val" style="color:#F7931A">${btcPct.toFixed(1)}% — ${fe(btcVal)}</div>
+      </div>
     </div>
   </div>
 
-  <div style="display:grid;grid-template-columns:1fr 280px;gap:14px">
+  <!-- STAT CARDS -->
+  <div class="g4">
+    <div class="stat-card">
+      <div class="stat-card-label">Mensuel</div>
+      <div class="stat-card-val">${pc(mP,22)}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card-label">Annuel</div>
+      <div class="stat-card-val">${pc(aP,22)}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card-label">Cost Basis</div>
+      <div class="stat-card-val" style="font-size:16px">${fe(cost)}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card-label">Positions</div>
+      <div class="stat-card-val">${S.pos.length}</div>
+    </div>
+  </div>
+
+  <!-- CHART + DONUT -->
+  <div style="display:grid;grid-template-columns:1fr;gap:12px">
     <div class="card">
       <div class="ct">Évolution du Patrimoine</div>
-      <div style="position:relative;width:100%;height:160px"><canvas id="sc"></canvas></div>
+      <div style="position:relative;width:100%;height:150px"><canvas id="sc"></canvas></div>
     </div>
     <div class="card">
       <div class="ct">Allocation</div>
-      <div style="position:relative;width:160px;height:160px;margin:0 auto 10px">
-        <canvas id="donut" width="160" height="160"></canvas>
-        <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none">
-          <div style="font-size:7px;color:#555;text-transform:uppercase;letter-spacing:0.1em">Total</div>
-          <div style="font-size:14px;font-weight:700;color:#fff">${f(T/1000,0)}K€</div>
+      <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+        <div style="position:relative;width:130px;height:130px;flex-shrink:0;display:flex;align-items:center;justify-content:center">
+          <canvas id="donut" width="130" height="130"></canvas>
+          <div style="position:absolute;text-align:center;pointer-events:none">
+            <div style="font-size:7px;color:#555;text-transform:uppercase;letter-spacing:0.1em">Total</div>
+            <div style="font-size:13px;font-weight:700;color:#fff">${f(T/1000,0)}K€</div>
+          </div>
+        </div>
+        <div style="flex:1;min-width:140px">
+          ${allocArr.map(a=>`
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+            <div style="display:flex;align-items:center;gap:5px">
+              <div style="width:6px;height:6px;border-radius:1px;background:${ac[a.k]||'#555'}"></div>
+              <span style="font-size:9px;color:#888;text-transform:capitalize">${a.k==='crypto'?'₿ crypto':a.k}</span>
+            </div>
+            <div style="display:flex;gap:10px">
+              <span style="font-size:9px;color:${ac[a.k]||'#555'};font-weight:600">${a.pct.toFixed(1)}%</span>
+              <span style="font-size:9px;color:#444;min-width:62px;text-align:right">${fe(a.v)}</span>
+            </div>
+          </div>`).join('')}
         </div>
       </div>
-      ${allocArr.map(a=>`
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
-        <div style="display:flex;align-items:center;gap:5px">
-          <div style="width:6px;height:6px;border-radius:1px;background:${ac[a.k]||'#555'}"></div>
-          <span style="font-size:9px;color:#888;text-transform:capitalize">${a.k==='crypto'?'₿ '+a.k:a.k}</span>
-        </div>
-        <div style="display:flex;gap:10px">
-          <span style="font-size:9px;color:${ac[a.k]||'#555'};font-weight:600">${a.pct.toFixed(1)}%</span>
-          <span style="font-size:9px;color:#333;min-width:64px;text-align:right">${fe(a.v)}</span>
-        </div>
-      </div>`).join('')}
     </div>
   </div>
 
+  <!-- TOP GAINERS / LOSERS -->
   <div class="g2">
     <div class="card">
       <div class="ct" style="color:#00D4AA">▲ Top Gainers du jour</div>
       ${gainers.length?gainers.map((p,i)=>`
       <div class="pr">
         <span style="font-size:9px;color:#333;width:16px">${i+1}.</span>
-        <div style="flex:1"><div style="font-size:11px;font-weight:600;color:#fff">${p.ticker==='BTC'?'₿ '+p.ticker:p.ticker}</div><div style="font-size:9px;color:#333">${(p.name||'').slice(0,16)}</div></div>
-        <div style="text-align:right">${pc(p.dpct,11)}<div style="font-size:9px;color:#00D4AA">+${f(p.deur,0)}€</div></div>
-      </div>`).join(''):'<div class="empty" style="padding:16px 0;font-size:10px">Aucune donnée — prix d\'hier manquants</div>'}
+        <div style="flex:1"><div style="font-size:11px;font-weight:600;color:#fff">${p.ticker==='BTC'?'₿ BTC':p.ticker}</div><div style="font-size:8px;color:#333">${(p.name||'').slice(0,14)}</div></div>
+        <div style="text-align:right">${pc(p.dpct,11)}<div style="font-size:8px;color:#00D4AA">+${f(p.deur,0)}€</div></div>
+      </div>`).join(''):'<div class="empty" style="padding:14px 0;font-size:10px">En attente des prix live…</div>'}
     </div>
     <div class="card">
       <div class="ct" style="color:#FF3B5C">▼ Top Losers du jour</div>
       ${losers.length?losers.map((p,i)=>`
       <div class="pr">
         <span style="font-size:9px;color:#333;width:16px">${i+1}.</span>
-        <div style="flex:1"><div style="font-size:11px;font-weight:600;color:#fff">${p.ticker}</div><div style="font-size:9px;color:#333">${(p.name||'').slice(0,16)}</div></div>
-        <div style="text-align:right">${pc(p.dpct,11)}<div style="font-size:9px;color:#FF3B5C">${f(p.deur,0)}€</div></div>
-      </div>`).join(''):'<div class="empty" style="padding:16px 0;font-size:10px">Aucune baisse détectée</div>'}
+        <div style="flex:1"><div style="font-size:11px;font-weight:600;color:#fff">${p.ticker}</div><div style="font-size:8px;color:#333">${(p.name||'').slice(0,14)}</div></div>
+        <div style="text-align:right">${pc(p.dpct,11)}<div style="font-size:8px;color:#FF3B5C">${f(p.deur,0)}€</div></div>
+      </div>`).join(''):'<div class="empty" style="padding:14px 0;font-size:10px">En attente des prix live…</div>'}
     </div>
   </div>
 </div>`;
