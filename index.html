@@ -289,8 +289,14 @@ async function fetchOneStock(ticker){
   return false;
 }
 
+// Tickers en devise étrangère — prix Yahoo en devise locale, pas EUR
+// On les exclut du fetch automatique et on garde le prix Supabase
+const FOREX_BLACKLIST=new Set(['SECU','ATCO','NOVO','ANDR','EBS']);
+
 async function fetchStocksBackground(){
-  const tickers=[...new Set(S.pos.filter(p=>['action','etf'].includes(p.assets?.type)).map(p=>p.assets?.ticker).filter(Boolean))];
+  const tickers=[...new Set(S.pos
+    .filter(p=>['action','etf'].includes(p.assets?.type)&&!FOREX_BLACKLIST.has(p.assets?.ticker))
+    .map(p=>p.assets?.ticker).filter(Boolean))];
   for(const t of tickers){
     await fetchOneStock(t);
     await new Promise(r=>setTimeout(r,350));
@@ -298,7 +304,54 @@ async function fetchStocksBackground(){
   if(S.tab==='portfolio'||S.tab==='dashboard')render();
 }
 
-// ── TICKER UPDATE ─────────────────────────────────────────
+// ── SNAPSHOT DU JOUR ─────────────────────────────────────
+async function takeSnapshot(){
+  const btn=document.getElementById('snap-btn');
+  if(btn){btn.textContent='⏳ Sauvegarde…';btn.disabled=true;}
+  try{
+    const T=tot();
+    const cost=S.pos.reduce((s,p)=>s+(p.quantity*(p.avg_cost||0)),0);
+    const today=new Date().toISOString().slice(0,10);
+
+    // 1. Snapshot patrimoine
+    await dbPatch('portfolio_snapshots',`?date=eq.${today}`,{total_value:T,total_cost:cost});
+    const check=await db('portfolio_snapshots',`?date=eq.${today}`);
+    if(!Array.isArray(check)||check.length===0){
+      await dbPost('portfolio_snapshots',{
+        date:today,
+        total_value:T,
+        total_cost:cost,
+        daily_return_pct:0,
+        cumulative_return:cost>0?(T-cost)/cost*100:0
+      });
+    }
+
+    // 2. Prix du jour dans price_history
+    const priceEntries=S.pos
+      .filter(p=>p.assets?.ticker&&gP(p)>0)
+      .map(p=>({asset_id:p.asset_id,date:today,close:gP(p),source:'auto'}));
+
+    for(const entry of priceEntries){
+      await fetch(`${SU}/rest/v1/price_history`,{
+        method:'POST',
+        headers:{...SH,'Prefer':'resolution=merge-duplicates'},
+        body:JSON.stringify(entry)
+      });
+    }
+
+    if(btn){btn.textContent='✅ Snapshot sauvegardé !';btn.style.background='#00D4AA';}
+    setTimeout(()=>{
+      if(btn){btn.textContent='📸 Snapshot du jour';btn.disabled=false;btn.style.background='';}
+    },3000);
+
+    // Recharger les snapshots
+    S.snaps=await db('portfolio_snapshots','?select=*&order=date');
+    render();
+  }catch(e){
+    if(btn){btn.textContent='❌ Erreur';btn.disabled=false;}
+    setTimeout(()=>{if(btn)btn.textContent='📸 Snapshot du jour';},3000);
+  }
+}
 function updateTicker(){
   const fmt2=(v,d=0)=>v>0?f(v,d):'…';
   const chg=(v)=>v>0?`<span class="pos">▲${v.toFixed(2)}%</span>`:v<0?`<span class="neg">▼${Math.abs(v).toFixed(2)}%</span>`:'<span style="color:#555">—</span>';
@@ -417,7 +470,10 @@ function renderDashboard(){
 
   <!-- WEALTH CARD -->
   <div class="wealth-card">
-    <div class="wealth-label">Valeur Nette du Patrimoine</div>
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
+      <div class="wealth-label">Valeur Nette du Patrimoine</div>
+      <button class="btn" id="snap-btn" onclick="takeSnapshot()" style="font-size:9px;padding:5px 12px">📸 Snapshot du jour</button>
+    </div>
     <div class="wv" id="wealth-val">${fe(T)}</div>
     <div class="wealth-sub">
       <div class="wealth-stat">
