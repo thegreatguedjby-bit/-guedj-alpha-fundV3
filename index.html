@@ -51,11 +51,12 @@
     .ct{font-size:8px;letter-spacing:0.12em;text-transform:uppercase;color:#555;margin-bottom:8px}
     .ct-orange{color:#F7931A}
 
-    /* ── WEALTH VALUE — GRAND ET LISIBLE ── */
     .wealth-card{background:linear-gradient(135deg,#0f0f0f 0%,#111008 100%);border:1px solid #2a2a1a;border-radius:8px;padding:20px 18px;position:relative;overflow:hidden}
     .wealth-label{font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:#666;margin-bottom:6px}
-    .wv{font-family:'Playfair Display',serif;font-size:52px;font-weight:900;color:#F7931A;line-height:1;letter-spacing:-0.02em}
+    /* ── WEALTH VALUE ── */
+    .wv{font-family:'Playfair Display',serif;font-size:52px;font-weight:900;color:#F7931A;line-height:1;letter-spacing:0.04em}
     @media(min-width:768px){.wv{font-size:68px}}
+    .wv-cents{font-size:0.45em;color:#c97a15;font-weight:700;letter-spacing:0.02em}
     .wealth-sub{display:flex;align-items:center;gap:14px;margin-top:10px;flex-wrap:wrap}
     .wealth-stat{display:flex;flex-direction:column;gap:2px}
     .wealth-stat-label{font-size:7px;color:#444;text-transform:uppercase;letter-spacing:0.1em}
@@ -218,6 +219,11 @@ let S={tab:'dashboard',pos:[],acc:[],assets:[],snaps:[],divs:[],ph:[],
 
 const f=(n,d=0)=>new Intl.NumberFormat('fr-FR',{minimumFractionDigits:d,maximumFractionDigits:d}).format(n||0);
 const fe=(n)=>new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(n||0);
+const fmtWealth=(n)=>{
+  // Affiche ex: "858 707 €" avec espace visible entre milliers
+  const parts=Math.round(n||0).toString().replace(/\B(?=(\d{3})+(?!\d))/g,'\u202F');
+  return parts+'\u202F€';
+};
 const pc=(v,sz=12)=>{const c=v>=0?'pos':'neg';return`<span class="${c}" style="font-size:${sz}px;font-weight:600">${v>=0?'+':''}${(v||0).toFixed(2)}%</span>`;};
 const tb=(t)=>{const m={action:'ba',etf:'be',crypto:'bc',epargne:'bep',cash:'bca'};return`<span class="badge ${m[t]||'bca'}">${t||'?'}</span>`;};
 
@@ -338,7 +344,40 @@ async function fetchStocksBackground(){
   if(S.tab==='portfolio'||S.tab==='dashboard')render();
 }
 
-// ── REFRESH ALL PRICES ───────────────────────────────────
+// ── AUTO SNAPSHOT QUOTIDIEN ──────────────────────────────
+async function autoSnapshot(){
+  try{
+    const today=new Date().toISOString().slice(0,10);
+    // Vérifier si snapshot déjà fait aujourd'hui
+    const existing=S.snaps.find(s=>s.date===today);
+    if(existing&&existing.total_value>0)return; // Déjà fait
+    const T=tot();
+    if(T<=0)return;
+    const cost=S.pos.reduce((s,p)=>s+(p.quantity*(p.avg_cost||0)),0);
+    // Sauvegarder snapshot
+    await dbPost('portfolio_snapshots',{
+      date:today,
+      total_value:T,
+      total_cost:cost,
+      daily_return_pct:0,
+      cumulative_return:cost>0?(T-cost)/cost*100:0
+    }).catch(()=>dbPatch('portfolio_snapshots',`?date=eq.${today}`,{total_value:T,total_cost:cost}));
+    // Sauvegarder prix dans price_history
+    for(const pos of S.pos){
+      if(!pos.assets?.ticker)continue;
+      const price=gP(pos);
+      if(price<=0)continue;
+      await fetch(`${SU}/rest/v1/price_history`,{
+        method:'POST',
+        headers:{...SH,'Prefer':'resolution=merge-duplicates'},
+        body:JSON.stringify({asset_id:pos.asset_id,date:today,close:price,source:'auto'})
+      }).catch(()=>{});
+    }
+    // Recharger snapshots
+    S.snaps=await db('portfolio_snapshots','?select=*&order=date');
+    console.log('✅ Snapshot automatique sauvegardé pour',today);
+  }catch(e){console.log('Snapshot auto failed:',e);}
+}
 async function refreshAllPrices(){
   const btn=document.getElementById('snap-btn');
   if(btn){btn.textContent='⏳ Actualisation…';btn.disabled=true;}
@@ -475,7 +514,7 @@ function renderDashboard(){
       <div class="wealth-label">Valeur Nette du Patrimoine</div>
       <button class="btn" id="snap-btn" onclick="refreshAllPrices()" style="font-size:9px;padding:5px 12px">↻ Actualiser prix</button>
     </div>
-    <div class="wv" id="wealth-val">${fe(T)}</div>
+    <div class="wv" id="wealth-val">${fmtWealth(T)}</div>
     <div class="wealth-sub">
       <div class="wealth-stat">
         <div class="wealth-stat-label">Var. Journalière</div>
@@ -984,7 +1023,11 @@ setInterval(()=>{
   fetchMarketIndices();      // CAC40, SP500, GOLD, EUR/USD
   setInterval(fetchCrypto,60000);
   setInterval(fetchMarketIndices,300000);
-  setTimeout(()=>fetchStocksBackground(),3000);  // Actions en arrière-plan
+  setTimeout(()=>{
+    fetchStocksBackground();
+    // Auto snapshot après que les prix sont chargés
+    setTimeout(autoSnapshot, 5000);
+  },3000);
   setInterval(()=>fetchStocksBackground(),300000);
 })();
 </script>
