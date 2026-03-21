@@ -115,9 +115,30 @@
     .tag-live{font-size:7px;color:#00D4AA;background:rgba(0,212,170,0.1);padding:1px 4px;border-radius:2px;margin-left:3px}
     .tag-btc-live{font-size:7px;color:#F7931A;background:rgba(247,147,26,0.1);padding:1px 4px;border-radius:2px;margin-left:3px}
     .tag-stale{font-size:7px;color:#444;background:rgba(255,255,255,0.04);padding:1px 4px;border-radius:2px;margin-left:3px}
-    .orange-bar{height:2px;background:linear-gradient(90deg,#F7931A,#00D4AA);border-radius:1px;margin-bottom:14px}
-    .footer{border-top:1px solid #141414;padding:12px 16px;text-align:center;font-size:8px;color:#2a2a2a;letter-spacing:0.1em}
-    .footer span{color:#F7931A}
+    /* ── MOBILE TABLE FIX ── */
+    .tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:4px}
+    .tbl td,.tbl th{white-space:nowrap}
+    /* Sur mobile — cacher colonnes moins importantes */
+    @media(max-width:600px){
+      .col-hide{display:none}
+      .tbl td,.tbl th{padding:8px 6px;font-size:10px}
+    }
+
+    /* ── MOBILE TAB NAVIGATION ── */
+    .tabs{display:flex;overflow-x:auto;margin-top:4px;-webkit-overflow-scrolling:touch;scrollbar-width:none;scroll-snap-type:x mandatory}
+    .tabs::-webkit-scrollbar{display:none}
+    .tab{scroll-snap-align:start;min-width:fit-content;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+
+    /* ── BOTTOM NAV MOBILE ── */
+    .bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:#0a0a0a;border-top:1px solid #1a1a1a;z-index:200;padding:6px 0 calc(6px + env(safe-area-inset-bottom))}
+    @media(max-width:768px){.bottom-nav{display:flex;justify-content:space-around;align-items:center}}
+    .bnav-item{display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;padding:4px 8px;border-radius:6px;-webkit-tap-highlight-color:transparent;touch-action:manipulation;flex:1}
+    .bnav-item.active .bnav-icon{color:#F7931A}
+    .bnav-item.active .bnav-label{color:#F7931A}
+    .bnav-icon{font-size:18px;line-height:1}
+    .bnav-label{font-size:8px;color:#555;letter-spacing:0.05em;text-transform:uppercase;font-family:'IBM Plex Mono',monospace}
+    /* Ajouter padding bottom sur mobile pour la bottom nav */
+    @media(max-width:768px){.cnt{padding-bottom:80px}}
   </style>
 </head>
 <body>
@@ -163,6 +184,30 @@
 <main class="cnt" id="cnt">
   <div class="empty"><div class="spin"></div><div style="margin-top:12px;color:#F7931A">Connexion Supabase…</div></div>
 </main>
+
+<!-- BOTTOM NAV MOBILE -->
+<nav class="bottom-nav" id="bottom-nav">
+  <div class="bnav-item active" onclick="goTabMobile('dashboard',this)">
+    <div class="bnav-icon">📊</div>
+    <div class="bnav-label">Dashboard</div>
+  </div>
+  <div class="bnav-item" onclick="goTabMobile('portfolio',this)">
+    <div class="bnav-icon">💼</div>
+    <div class="bnav-label">Positions</div>
+  </div>
+  <div class="bnav-item" onclick="goTabMobile('performance',this)">
+    <div class="bnav-icon">📈</div>
+    <div class="bnav-label">Perf.</div>
+  </div>
+  <div class="bnav-item" onclick="goTabMobile('dividends',this)">
+    <div class="bnav-icon">💰</div>
+    <div class="bnav-label">Divid.</div>
+  </div>
+  <div class="bnav-item" onclick="goTabMobile('gestion',this)">
+    <div class="bnav-icon">⚙️</div>
+    <div class="bnav-label">Gestion</div>
+  </div>
+</nav>
 
 <footer class="footer">GUEDJ <span>ALPHA</span> FUND · USAGE STRICTEMENT PERSONNEL · POWERED BY SUPABASE</footer>
 
@@ -304,52 +349,19 @@ async function fetchStocksBackground(){
   if(S.tab==='portfolio'||S.tab==='dashboard')render();
 }
 
-// ── SNAPSHOT DU JOUR ─────────────────────────────────────
-async function takeSnapshot(){
+// ── REFRESH ALL PRICES ───────────────────────────────────
+async function refreshAllPrices(){
   const btn=document.getElementById('snap-btn');
-  if(btn){btn.textContent='⏳ Sauvegarde…';btn.disabled=true;}
+  if(btn){btn.textContent='⏳ Actualisation…';btn.disabled=true;}
   try{
-    const T=tot();
-    const cost=S.pos.reduce((s,p)=>s+(p.quantity*(p.avg_cost||0)),0);
-    const today=new Date().toISOString().slice(0,10);
-
-    // 1. Snapshot patrimoine
-    await dbPatch('portfolio_snapshots',`?date=eq.${today}`,{total_value:T,total_cost:cost});
-    const check=await db('portfolio_snapshots',`?date=eq.${today}`);
-    if(!Array.isArray(check)||check.length===0){
-      await dbPost('portfolio_snapshots',{
-        date:today,
-        total_value:T,
-        total_cost:cost,
-        daily_return_pct:0,
-        cumulative_return:cost>0?(T-cost)/cost*100:0
-      });
-    }
-
-    // 2. Prix du jour dans price_history
-    const priceEntries=S.pos
-      .filter(p=>p.assets?.ticker&&gP(p)>0)
-      .map(p=>({asset_id:p.asset_id,date:today,close:gP(p),source:'auto'}));
-
-    for(const entry of priceEntries){
-      await fetch(`${SU}/rest/v1/price_history`,{
-        method:'POST',
-        headers:{...SH,'Prefer':'resolution=merge-duplicates'},
-        body:JSON.stringify(entry)
-      });
-    }
-
-    if(btn){btn.textContent='✅ Snapshot sauvegardé !';btn.style.background='#00D4AA';}
+    await fetchCrypto();
+    await fetchStocksBackground();
+    if(btn){btn.textContent='✅ Mis à jour !';btn.style.background='#00D4AA';}
     setTimeout(()=>{
-      if(btn){btn.textContent='📸 Snapshot du jour';btn.disabled=false;btn.style.background='';}
-    },3000);
-
-    // Recharger les snapshots
-    S.snaps=await db('portfolio_snapshots','?select=*&order=date');
-    render();
+      if(btn){btn.textContent='↻ Actualiser prix';btn.disabled=false;btn.style.background='';}
+    },2000);
   }catch(e){
-    if(btn){btn.textContent='❌ Erreur';btn.disabled=false;}
-    setTimeout(()=>{if(btn)btn.textContent='📸 Snapshot du jour';},3000);
+    if(btn){btn.textContent='↻ Actualiser prix';btn.disabled=false;}
   }
 }
 function updateTicker(){
@@ -472,7 +484,7 @@ function renderDashboard(){
   <div class="wealth-card">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
       <div class="wealth-label">Valeur Nette du Patrimoine</div>
-      <button class="btn" id="snap-btn" onclick="takeSnapshot()" style="font-size:9px;padding:5px 12px">📸 Snapshot du jour</button>
+      <button class="btn" id="snap-btn" onclick="refreshAllPrices()" style="font-size:9px;padding:5px 12px">↻ Actualiser prix</button>
     </div>
     <div class="wv" id="wealth-val">${fe(T)}</div>
     <div class="wealth-sub">
@@ -609,7 +621,7 @@ function renderPortfolio(){
       <button class="btn" onclick="goTabEl('import')">₿ Import PDF</button>
     </div>
   </div>
-  <div style="overflow-x:auto"><table class="tbl">
+  <div class="tbl-wrap"><table class="tbl">
     <thead><tr>
       <th style="text-align:left">Actif</th><th>Type</th><th>Compte</th><th>Qté</th><th>Prix</th><th>Valeur</th><th>P&L%</th><th>P&L€</th>
     </tr></thead>
@@ -762,7 +774,7 @@ function renderGestion(){
   </div>
   <div class="card">
     <div class="ct">Toutes les Positions (${S.pos.length})</div>
-    <div style="overflow-x:auto"><table class="tbl">
+    <div class="tbl-wrap"><table class="tbl">
       <thead><tr><th style="text-align:left">Ticker</th><th style="text-align:left">Nom</th><th>Type</th><th>Compte</th><th>Quantité</th><th></th></tr></thead>
       <tbody>${S.pos.map(p=>`<tr>
         <td style="text-align:left;font-weight:700;color:${p.assets?.ticker==='BTC'?'#F7931A':'#fff'};font-size:12px">${p.assets?.ticker==='BTC'?'₿ ':''}${p.assets?.ticker||'?'}</td>
@@ -857,7 +869,7 @@ function renderDividends(){
   </div>
   <div class="card">
     <div class="ct">Calendrier des Dividendes (${sorted.length})</div>
-    <div style="overflow-x:auto"><table class="tbl">
+    <div class="tbl-wrap"><table class="tbl">
       <thead><tr>
         <th style="text-align:left">Ticker</th>
         <th style="text-align:left">Société</th>
@@ -922,6 +934,18 @@ function renderHistory(){
 }
 
 // ── NAV ───────────────────────────────────────────────────
+function goTabMobile(tab,el){
+  S.tab=tab;
+  // Update bottom nav
+  document.querySelectorAll('.bnav-item').forEach(t=>t.classList.remove('active'));
+  if(el)el.classList.add('active');
+  // Update top tabs too
+  const tabs=['dashboard','portfolio','import','gestion','performance','dividends','history'];
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',tabs[i]===tab));
+  render();
+  window.scrollTo(0,0);
+}
+
 function goTab(tab,el){
   S.tab=tab;
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
