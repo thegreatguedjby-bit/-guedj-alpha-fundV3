@@ -115,7 +115,27 @@
     .tag-live{font-size:7px;color:#00D4AA;background:rgba(0,212,170,0.1);padding:1px 4px;border-radius:2px;margin-left:3px}
     .tag-btc-live{font-size:7px;color:#F7931A;background:rgba(247,147,26,0.1);padding:1px 4px;border-radius:2px;margin-left:3px}
     .tag-stale{font-size:7px;color:#444;background:rgba(255,255,255,0.04);padding:1px 4px;border-radius:2px;margin-left:3px}
-    /* ── MOBILE ── */
+    /* ── LIGHT MODE ── */
+    body.light{background:#f5f5f0;color:#1a1a1a}
+    body.light .hd{background:#fff;border-color:#e5e5e5}
+    body.light .tkb{background:#fafafa;border-color:#e5e5e5}
+    body.light .card,.body.light .stat-card{background:#fff;border-color:#e5e5e5}
+    body.light .stat-card{background:#fff;border-color:#e5e5e5}
+    body.light .wealth-card{background:#fff;border-color:#f0e8d8}
+    body.light .tab{color:#aaa}
+    body.light .tab.active{color:#F7931A}
+    body.light .ct{color:#999}
+    body.light .tbl th{color:#aaa;border-color:#eee}
+    body.light .tbl td{border-color:#f5f5f5;color:#1a1a1a}
+    body.light .tbl tr:hover td{background:#fafafa}
+    body.light .fi{background:#f5f5f5;border-color:#ddd;color:#1a1a1a}
+    body.light .btsm{border-color:#ddd;color:#999}
+    body.light .bottom-nav{background:#fff;border-color:#eee}
+    body.light .bnav-label{color:#aaa}
+    body.light .ts{color:#999}
+    body.light .tp{color:#555}
+    body.light .htime{color:#aaa}
+    body.light #theme-btn{border-color:#ddd;color:#aaa}
     .tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
     .tbl td,.tbl th{white-space:nowrap}
     @media(max-width:600px){
@@ -139,6 +159,7 @@
       <div class="ls">₿ Personal Wealth Terminal</div>
     </div>
     <div style="display:flex;align-items:center;gap:8px">
+      <button id="theme-btn" onclick="toggleTheme()" style="background:none;border:1px solid #2a2a2a;border-radius:20px;padding:3px 10px;font-size:11px;cursor:pointer;color:#555;font-family:'IBM Plex Mono',monospace;transition:all 0.2s">☀️</button>
       <span class="ld"></span>
       <span class="htime" id="clk"></span>
     </div>
@@ -435,6 +456,21 @@ async function autoSnapshot(){
     console.log('✅ Snapshot automatique sauvegardé pour',today);
   }catch(e){console.log('Snapshot auto failed:',e);}
 }
+// ── THEME ─────────────────────────────────────────────────
+function toggleTheme(){
+  const isLight=document.body.classList.toggle('light');
+  const btn=document.getElementById('theme-btn');
+  if(btn)btn.textContent=isLight?'🌙':'☀️';
+  localStorage.setItem('theme',isLight?'light':'dark');
+}
+function initTheme(){
+  if(localStorage.getItem('theme')==='light'){
+    document.body.classList.add('light');
+    const btn=document.getElementById('theme-btn');
+    if(btn)btn.textContent='🌙';
+  }
+}
+
 async function refreshAllPrices(){
   const btn=document.getElementById('snap-btn');
   if(btn){btn.textContent='⏳ Actualisation…';btn.disabled=true;}
@@ -695,35 +731,51 @@ function renderDashboard(){
 }
 
 // ── PORTFOLIO ─────────────────────────────────────────────
+let portfolioSearch='';
+
 function renderPortfolio(){
-  const sorted=[...S.pos].sort((a,b)=>gV(b)-gV(a));
+  const all=[...S.pos].sort((a,b)=>gV(b)-gV(a));
+  const filtered=portfolioSearch
+    ?all.filter(p=>p.assets?.ticker?.toLowerCase().includes(portfolioSearch)||p.assets?.name?.toLowerCase().includes(portfolioSearch))
+    :all;
+
   document.getElementById('cnt').innerHTML=`
 <div class="card">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-    <div class="ct" style="margin-bottom:0">Positions (${sorted.length}) — <span style="color:#F7931A">${fe(tot())}</span></div>
-    <div style="display:flex;gap:8px">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+    <div class="ct" style="margin-bottom:0">Positions (${filtered.length}/${all.length}) — <span style="color:#F7931A">${fe(tot())}</span></div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <input id="psearch" class="fi" placeholder="🔍 Rechercher…" style="width:140px;padding:5px 8px;font-size:11px"
+        value="${portfolioSearch}"
+        oninput="portfolioSearch=this.value.toLowerCase();renderPortfolio()">
       <button class="btsm" id="rfbtn" onclick="doRefresh()">↻ Prix live</button>
-      <button class="btn" onclick="goTabEl('import')">₿ Import PDF</button>
+      <button class="btn" onclick="goTabEl('import')">Import PDF</button>
     </div>
   </div>
+  ${filtered.length===0?'<div class="empty">Aucune position trouvée</div>':`
   <div class="tbl-wrap"><table class="tbl">
     <thead><tr>
-      <th style="text-align:left">Actif</th><th>Type</th><th>Compte</th><th>Qté</th><th>Prix</th><th>Valeur</th><th>P&L%</th><th>P&L€</th>
+      <th style="text-align:left">Actif</th>
+      <th class="col-hide">Type</th>
+      <th class="col-hide">Compte</th>
+      <th>Qté</th>
+      <th>Prix</th>
+      <th>Valeur</th>
+      <th>P&L%</th>
+      <th>P&L€</th>
     </tr></thead>
     <tbody>
-    ${sorted.map(p=>{
+    ${filtered.map(p=>{
       const val=gV(p),cost=p.quantity*(p.avg_cost||0),plPct=cost>0?(val-cost)/cost*100:0,plEur=val-cost;
       const cp=gP(p);
       const isBTC=p.assets?.ticker==='BTC';
-      const isETH=p.assets?.ticker==='ETH';
-      const isLive=isBTC||isETH||!!S.lp[p.assets?.ticker];
+      const isLive=isBTC||(p.assets?.ticker==='ETH')||!!S.lp[p.assets?.ticker];
       return`<tr>
         <td style="text-align:left">
-          <div style="font-size:12px;font-weight:700;color:${isBTC?'#F7931A':'#fff'}">${isBTC?'₿ ':''}{${p.assets?.ticker||'?'}}</div>
-          <div style="font-size:9px;color:#333">${(p.assets?.name||'').slice(0,18)}</div>
+          <div style="font-size:12px;font-weight:700;color:${isBTC?'#F7931A':'#fff'}">${isBTC?'₿ ':''}${p.assets?.ticker||'?'}</div>
+          <div style="font-size:9px;color:#444">${(p.assets?.name||'').slice(0,18)}</div>
         </td>
-        <td>${tb(p.assets?.type||'other')}</td>
-        <td style="font-size:9px;color:#444">${(p.accounts?.name||'').replace(' Edmond de Rothschild','').slice(0,14)}</td>
+        <td class="col-hide">${tb(p.assets?.type||'other')}</td>
+        <td class="col-hide" style="font-size:9px;color:#444">${(p.accounts?.name||'').replace(' Edmond de Rothschild','').slice(0,14)}</td>
         <td style="color:#777">${f(p.quantity,p.quantity<10?3:1)}</td>
         <td><span id="price-${p.assets?.ticker}">${f(cp,2)}€<span class="${isBTC?'tag-btc-live':isLive?'tag-live':'tag-stale'}">${isBTC?'₿':isLive?'LIVE':'—'}</span></span></td>
         <td style="font-weight:700;color:${isBTC?'#F7931A':'#fff'}">${fe(val)}</td>
@@ -732,8 +784,10 @@ function renderPortfolio(){
       </tr>`;
     }).join('')}
     </tbody>
-  </table></div>
-</div>`.replace(/\{/g,'').replace(/\}/g,'');
+  </table></div>`}
+</div>`;
+  // Refocus search input
+  if(portfolioSearch){const el=document.getElementById('psearch');if(el){el.focus();el.setSelectionRange(el.value.length,el.value.length);}}
 }
 
 async function doRefresh(){
@@ -1094,6 +1148,7 @@ setInterval(()=>{
 
 // ── INIT ──────────────────────────────────────────────────
 (async()=>{
+  initTheme();
   await loadData();          // Supabase ~300ms
   render();                  // Affichage immédiat
   fetchCrypto();             // BTC/ETH live
