@@ -319,8 +319,8 @@ async function fetchMarketIndices(){
     if(sp){S.sp=sp.price;S.spC=sp.chg;}
     if(gold){S.gold=gold.price;S.goldC=gold.chg;}
     if(eur){S.eur=eur.price;S.eurC=eur.chg;}
-
     updateTicker();
+    if(S.tab==='dashboard')render();
   }catch(e){}
 }
 
@@ -1151,16 +1151,17 @@ setInterval(()=>{
   initTheme();
   await loadData();          // Supabase ~300ms
   render();                  // Affichage immédiat
-  fetchCrypto();             // BTC/ETH live
-  fetchMarketIndices();      // CAC40, SP500, GOLD, EUR/USD
+  fetchCrypto();
+  fetchMarketIndices();
   setInterval(fetchCrypto,60000);
   setInterval(fetchMarketIndices,300000);
   setTimeout(()=>{
     fetchStocksBackground();
-    // Auto snapshot après que les prix sont chargés
-    setTimeout(autoSnapshot, 5000);
+    setTimeout(autoSnapshot,5000);
   },3000);
   setInterval(()=>fetchStocksBackground(),300000);
+  // Vérifier snapshot toutes les heures (si app reste ouverte)
+  setInterval(autoSnapshot,3600000);
 })();
 </script>
 </body>
