@@ -54,7 +54,7 @@
     /* ── WEALTH VALUE — GRAND ET LISIBLE ── */
     .wealth-card{background:linear-gradient(135deg,#0f0f0f 0%,#111008 100%);border:1px solid #2a2a1a;border-radius:8px;padding:20px 18px;position:relative;overflow:hidden}
     .wealth-label{font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:#666;margin-bottom:6px}
-    .wv{font-family:'Playfair Display',serif;font-size:52px;font-weight:900;color:#fff;line-height:1;letter-spacing:-0.02em}
+    .wv{font-family:'Playfair Display',serif;font-size:52px;font-weight:900;color:#F7931A;line-height:1;letter-spacing:-0.02em}
     @media(min-width:768px){.wv{font-size:68px}}
     .wealth-sub{display:flex;align-items:center;gap:14px;margin-top:10px;flex-wrap:wrap}
     .wealth-stat{display:flex;flex-direction:column;gap:2px}
@@ -115,30 +115,19 @@
     .tag-live{font-size:7px;color:#00D4AA;background:rgba(0,212,170,0.1);padding:1px 4px;border-radius:2px;margin-left:3px}
     .tag-btc-live{font-size:7px;color:#F7931A;background:rgba(247,147,26,0.1);padding:1px 4px;border-radius:2px;margin-left:3px}
     .tag-stale{font-size:7px;color:#444;background:rgba(255,255,255,0.04);padding:1px 4px;border-radius:2px;margin-left:3px}
-    /* ── MOBILE TABLE FIX ── */
-    .tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:4px}
+    /* ── MOBILE ── */
+    .tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
     .tbl td,.tbl th{white-space:nowrap}
-    /* Sur mobile — cacher colonnes moins importantes */
     @media(max-width:600px){
       .col-hide{display:none}
-      .tbl td,.tbl th{padding:8px 6px;font-size:10px}
+      .tbl td,.tbl th{padding:7px 5px;font-size:9px}
     }
-
-    /* ── MOBILE TAB NAVIGATION ── */
-    .tabs{display:flex;overflow-x:auto;margin-top:4px;-webkit-overflow-scrolling:touch;scrollbar-width:none;scroll-snap-type:x mandatory}
-    .tabs::-webkit-scrollbar{display:none}
-    .tab{scroll-snap-align:start;min-width:fit-content;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
-
-    /* ── BOTTOM NAV MOBILE ── */
     .bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:#0a0a0a;border-top:1px solid #1a1a1a;z-index:200;padding:6px 0 calc(6px + env(safe-area-inset-bottom))}
-    @media(max-width:768px){.bottom-nav{display:flex;justify-content:space-around;align-items:center}}
+    @media(max-width:768px){.bottom-nav{display:flex;justify-content:space-around;align-items:center}.cnt{padding-bottom:80px}}
     .bnav-item{display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;padding:4px 8px;border-radius:6px;-webkit-tap-highlight-color:transparent;touch-action:manipulation;flex:1}
-    .bnav-item.active .bnav-icon{color:#F7931A}
-    .bnav-item.active .bnav-label{color:#F7931A}
+    .bnav-item.active .bnav-icon,.bnav-item.active .bnav-label{color:#F7931A}
     .bnav-icon{font-size:18px;line-height:1}
     .bnav-label{font-size:8px;color:#555;letter-spacing:0.05em;text-transform:uppercase;font-family:'IBM Plex Mono',monospace}
-    /* Ajouter padding bottom sur mobile pour la bottom nav */
-    @media(max-width:768px){.cnt{padding-bottom:80px}}
   </style>
 </head>
 <body>
