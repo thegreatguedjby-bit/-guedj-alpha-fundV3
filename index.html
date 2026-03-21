@@ -329,18 +329,75 @@ async function fetchOneStock(ticker){
   return false;
 }
 
-// Tickers en devise étrangère — prix Yahoo en devise locale, pas EUR
-// On les exclut du fetch automatique et on garde le prix Supabase
-const FOREX_BLACKLIST=new Set(['SECU','ATCO','NOVO','ANDR','EBS']);
+// Tickers avec devise locale → conversion automatique en EUR
+const FOREX_TICKERS={
+  'SECU':{yh:'SECU-B.ST',currency:'SEK'},
+  'ATCO':{yh:'ATCO-B.ST',currency:'SEK'},
+  'NOVO':{yh:'NOVO-B.CO',currency:'DKK'},
+  'ANDR':{yh:'ANDR.VI',  currency:'EUR'}, // Vienne mais EUR
+  'EBS': {yh:'EBS.VI',   currency:'EUR'},
+};
+
+// Taux de change EUR (mis à jour une fois par session)
+let fxRates={SEK:null,DKK:null};
+
+async function fetchFxRates(){
+  try{
+    const r=await fetch('https://api.frankfurter.app/latest?from=EUR&to=SEK,DKK',{signal:AbortSignal.timeout(5000)});
+    const d=await r.json();
+    if(d?.rates){
+      fxRates.SEK=d.rates.SEK;
+      fxRates.DKK=d.rates.DKK;
+    }
+  }catch(e){}
+}
+
+async function fetchForexStocks(){
+  // S'assurer qu'on a les taux de change
+  if(!fxRates.SEK||!fxRates.DKK)await fetchFxRates();
+  if(!fxRates.SEK||!fxRates.DKK)return; // Si API indisponible, on abandonne
+
+  for(const [ticker,info] of Object.entries(FOREX_TICKERS)){
+    try{
+      const url=`https://query1.finance.yahoo.com/v8/finance/chart/${info.yh}?interval=1d&range=2d`;
+      const proxy=`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+      const r=await fetch(proxy,{signal:AbortSignal.timeout(8000)});
+      const d=await r.json();
+      const meta=JSON.parse(d.contents)?.chart?.result?.[0]?.meta;
+      const pLocal=meta?.regularMarketPrice;
+      const prevLocal=meta?.previousClose||meta?.chartPreviousClose;
+      if(!pLocal||pLocal<=0)continue;
+
+      // Conversion en EUR
+      const rate=fxRates[info.currency]||1;
+      const pEur=info.currency==='EUR'?pLocal:pLocal/rate;
+      const prevEur=prevLocal>0?(info.currency==='EUR'?prevLocal:prevLocal/rate):null;
+
+      S.lp[ticker]=pEur;
+      if(prevEur)S.liveChanges[ticker]=(pEur-prevEur)/prevEur*100;
+
+      // Mettre à jour Supabase
+      const pos=S.pos.find(q=>q.assets?.ticker===ticker);
+      if(pos)dbPatch('positions',`?asset_id=eq.${pos.asset_id}`,{current_price:pEur,last_updated:new Date().toISOString()});
+
+      const el=document.getElementById(`price-${ticker}`);
+      if(el)el.innerHTML=f(pEur,2)+'€<span class="tag-live">LIVE</span>';
+
+      await new Promise(res=>setTimeout(res,350));
+    }catch(e){}
+  }
+}
 
 async function fetchStocksBackground(){
   const tickers=[...new Set(S.pos
-    .filter(p=>['action','etf'].includes(p.assets?.type)&&!FOREX_BLACKLIST.has(p.assets?.ticker))
+    .filter(p=>['action','etf'].includes(p.assets?.type)&&!FOREX_TICKERS[p.assets?.ticker])
     .map(p=>p.assets?.ticker).filter(Boolean))];
   for(const t of tickers){
     await fetchOneStock(t);
     await new Promise(r=>setTimeout(r,350));
   }
+  // Fetch aussi les tickers forex avec conversion
+  await fetchForexStocks();
   if(S.tab==='portfolio'||S.tab==='dashboard')render();
 }
 
