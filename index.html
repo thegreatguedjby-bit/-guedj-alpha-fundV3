@@ -842,13 +842,24 @@ async function delPos(id){
 }
 
 // ── PERFORMANCE ───────────────────────────────────────────
+let perfSort='abs'; // 'abs' | 'best' | 'worst' | 'eur'
+
 function renderPerformance(){
   const T=tot(),cost=S.pos.reduce((s,p)=>s+(p.quantity*(p.avg_cost||0)),0),gain=T-cost,gPct=cost>0?gain/cost*100:0;
   const contribs=S.pos.filter(p=>!['cash','epargne'].includes(p.assets?.type)).map(p=>{
-    const v=gV(p),c=p.quantity*(p.avg_cost||0),plPct=c>0?(v-c)/c*100:0;
-    return{ticker:p.assets?.ticker,plPct,plEur:v-c,isBtc:p.assets?.ticker==='BTC'};
-  }).sort((a,b)=>Math.abs(b.plPct)-Math.abs(a.plPct));
+    const v=gV(p),c=p.quantity*(p.avg_cost||0),plPct=c>0?(v-c)/c*100:0,plEur=v-c;
+    return{ticker:p.assets?.ticker,plPct,plEur,isBtc:p.assets?.ticker==='BTC'};
+  });
+
+  const sorted={
+    abs:[...contribs].sort((a,b)=>Math.abs(b.plPct)-Math.abs(a.plPct)),
+    best:[...contribs].sort((a,b)=>b.plPct-a.plPct),
+    worst:[...contribs].sort((a,b)=>a.plPct-b.plPct),
+    eur:[...contribs].sort((a,b)=>b.plEur-a.plEur),
+  }[perfSort];
+
   const mx=Math.max(...contribs.map(c=>Math.abs(c.plPct)),1);
+  const btnStyle=(k)=>`background:${perfSort===k?'#F7931A':'none'};border:1px solid ${perfSort===k?'#F7931A':'#2a2a2a'};color:${perfSort===k?'#000':'#666'};border-radius:3px;padding:4px 10px;font-size:9px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-weight:${perfSort===k?'700':'400'}`;
 
   document.getElementById('cnt').innerHTML=`
 <div style="display:grid;gap:16px">
@@ -867,14 +878,23 @@ function renderPerformance(){
     </div>
   </div>
   <div class="card">
-    <div class="ct">Contribution par Position (P&L % depuis achat)</div>
-    ${contribs.slice(0,25).map(c=>`
-    <div style="display:grid;grid-template-columns:70px 1fr 80px;align-items:center;gap:10px;margin-bottom:8px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+      <div class="ct" style="margin-bottom:0">Contribution par Position</div>
+      <div style="display:flex;gap:6px">
+        <button style="${btnStyle('best')}" onclick="perfSort='best';renderPerformance()">▲ Meilleures</button>
+        <button style="${btnStyle('worst')}" onclick="perfSort='worst';renderPerformance()">▼ Pires</button>
+        <button style="${btnStyle('eur')}" onclick="perfSort='eur';renderPerformance()">€ Montant</button>
+        <button style="${btnStyle('abs')}" onclick="perfSort='abs';renderPerformance()">± Écart</button>
+      </div>
+    </div>
+    ${sorted.map(c=>`
+    <div style="display:grid;grid-template-columns:70px 1fr 90px 80px;align-items:center;gap:10px;margin-bottom:8px">
       <span style="font-size:10px;font-weight:700;color:${c.isBtc?'#F7931A':'#888'}">${c.isBtc?'₿ ':''}${c.ticker}</span>
       <div style="height:5px;background:#1a1a1a;border-radius:3px;overflow:hidden">
         <div style="height:100%;width:${Math.abs(c.plPct)/mx*100}%;background:${c.isBtc?'#F7931A':c.plPct>=0?'#00D4AA':'#FF3B5C'};border-radius:3px"></div>
       </div>
-      ${pc(c.plPct,11)}
+      ${pc(c.plPct,10)}
+      <span style="font-size:10px;text-align:right;color:${c.plEur>=0?'#00D4AA':'#FF3B5C'}">${c.plEur>=0?'+':''}${fe(c.plEur)}</span>
     </div>`).join('')}
   </div>
 </div>`;
