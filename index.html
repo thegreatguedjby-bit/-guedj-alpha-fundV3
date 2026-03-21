@@ -54,8 +54,8 @@
     .wealth-card{background:linear-gradient(135deg,#0f0f0f 0%,#111008 100%);border:1px solid #2a2a1a;border-radius:8px;padding:20px 18px;position:relative;overflow:hidden}
     .wealth-label{font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:#666;margin-bottom:6px}
     /* ── WEALTH VALUE ── */
-    .wv{font-family:'Playfair Display',serif;font-size:48px;font-weight:900;color:#F7931A;line-height:1;letter-spacing:0.06em;font-variant-numeric:tabular-nums}
-    @media(min-width:768px){.wv{font-size:64px;letter-spacing:0.08em}}
+    .wv{font-family:'Playfair Display',serif;font-size:42px;font-weight:900;color:#F7931A;line-height:1.1;letter-spacing:0.05em;word-spacing:0.1em}
+    @media(min-width:768px){.wv{font-size:56px}}
     .wealth-sub{display:flex;align-items:center;gap:14px;margin-top:10px;flex-wrap:wrap}
     .wealth-stat{display:flex;flex-direction:column;gap:2px}
     .wealth-stat-label{font-size:7px;color:#444;text-transform:uppercase;letter-spacing:0.1em}
@@ -219,7 +219,11 @@ let S={tab:'dashboard',pos:[],acc:[],assets:[],snaps:[],divs:[],ph:[],
 const f=(n,d=0)=>new Intl.NumberFormat('fr-FR',{minimumFractionDigits:d,maximumFractionDigits:d}).format(n||0);
 const fe=(n)=>new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(n||0);
 const fmtWealth=(n)=>{
-  return new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(n||0);
+  const rounded=Math.round(n||0);
+  const s=rounded.toString();
+  // Insérer espace tous les 3 chiffres depuis la droite
+  const spaced=s.replace(/\B(?=(\d{3})+(?!\d))/g,' ');
+  return spaced+' €';
 };
 const pc=(v,sz=12)=>{const c=v>=0?'pos':'neg';return`<span class="${c}" style="font-size:${sz}px;font-weight:600">${v>=0?'+':''}${(v||0).toFixed(2)}%</span>`;};
 const tb=(t)=>{const m={action:'ba',etf:'be',crypto:'bc',epargne:'bep',cash:'bca'};return`<span class="badge ${m[t]||'bca'}">${t||'?'}</span>`;};
