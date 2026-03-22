@@ -289,12 +289,11 @@ async function fetchCrypto(){
       const ep=S.pos.find(p=>p.assets?.ticker==='ETH');
       if(bp)dbPatch('positions',`?asset_id=eq.${bp.asset_id}`,{current_price:S.btc,last_updated:new Date().toISOString()});
       if(ep)dbPatch('positions',`?asset_id=eq.${ep.asset_id}`,{current_price:S.eth,last_updated:new Date().toISOString()});
-      if(S.tab==='dashboard'||S.tab==='portfolio'){
-        const T=tot();
-        const cost=S.pos.reduce((s,p)=>s+(p.quantity*(p.avg_cost||0)),0);
-        slotUpdate(T,T-cost);
-        render();
-      }
+      const T=tot();
+      const cost=S.pos.reduce((s,p)=>s+(p.quantity*(p.avg_cost||0)),0);
+      slotUpdate(T,T-cost);
+      // Re-render complet seulement si dashboard pas encore affiché
+      if(!document.getElementById('wealth-val'))render();
     }
   }catch(e){}
 }
@@ -438,14 +437,11 @@ async function fetchStocksBackground(){
     await fetchOneStock(t);
     await new Promise(r=>setTimeout(r,350));
   }
-  // Fetch aussi les tickers forex avec conversion
   await fetchForexStocks();
-  if(S.tab==='portfolio'||S.tab==='dashboard'){
-    const T=tot();
-    const cost=S.pos.reduce((s,p)=>s+(p.quantity*(p.avg_cost||0)),0);
-    slotUpdate(T,T-cost);
-    render();
-  }
+  const T2=tot();
+  const cost2=S.pos.reduce((s,p)=>s+(p.quantity*(p.avg_cost||0)),0);
+  slotUpdate(T2,T2-cost2);
+  if(!document.getElementById('wealth-val'))render();
 }
 
 // ── AUTO SNAPSHOT QUOTIDIEN ──────────────────────────────
@@ -505,24 +501,37 @@ function animateCounter(el,from,to,format,duration=800){
 }
 
 function slotUpdate(newWealth,newGain){
-  // Valeur patrimoine
   const wEl=document.getElementById('wealth-val');
-  if(wEl&&_prevWealth>0&&Math.abs(newWealth-_prevWealth)>10){
-    wEl.classList.remove('slot-anim');
-    void wEl.offsetWidth; // reset animation
-    wEl.classList.add('slot-anim');
-    animateCounter(wEl,_prevWealth,newWealth,fmtWealth,600);
-    setTimeout(()=>wEl.classList.remove('slot-anim'),700);
-  }
-  // Gain latent
   const gEl=document.getElementById('gain-val');
-  if(gEl&&_prevGain!==0&&Math.abs(newGain-_prevGain)>10){
-    animateCounter(gEl,_prevGain,newGain,(v)=>{
-      const sign=v>=0?'+':'';
-      return sign+fe(v);
-    },600);
+
+  // Si les éléments n'existent pas encore → render d'abord
+  if(!wEl||!gEl){
+    _prevWealth=newWealth;
+    _prevGain=newGain;
+    render();
+    return;
+  }
+
+  // Animer le patrimoine
+  if(_prevWealth>0&&Math.abs(newWealth-_prevWealth)>10){
+    animateCounter(wEl,_prevWealth,newWealth,fmtWealth,700);
+    // Flash orange
+    wEl.style.transition='color 0.15s';
+    wEl.style.color='#fff';
+    setTimeout(()=>{wEl.style.color='#F7931A';},150);
+  } else if(!_prevWealth){
+    wEl.textContent=fmtWealth(newWealth);
+  }
+
+  // Animer le gain
+  if(_prevGain!==0&&Math.abs(newGain-_prevGain)>10){
+    animateCounter(gEl,_prevGain,newGain,(v)=>(v>=0?'+':'')+fe(v),700);
+    gEl.style.color=newGain>=0?'#00D4AA':'#FF3B5C';
+  } else if(!_prevGain){
+    gEl.textContent=(newGain>=0?'+':'')+fe(newGain);
     gEl.style.color=newGain>=0?'#00D4AA':'#FF3B5C';
   }
+
   _prevWealth=newWealth;
   _prevGain=newGain;
 }
