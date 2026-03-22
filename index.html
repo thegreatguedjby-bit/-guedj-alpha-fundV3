@@ -199,12 +199,14 @@
 <div class="tkb"><div class="tki" id="tkr">
   <div class="ti"><span class="ts" style="color:#F7931A">₿ BTC</span><span id="tb1" class="btc-price tp">…</span><span id="tc1">—</span></div>
   <div class="ti"><span class="ts">ETH</span><span class="tp" id="te1">…</span><span id="tec1">—</span></div>
+  <div class="ti"><span class="ts" style="color:#00D4AA">🌊 stETH APR</span><span class="tp" id="tstetha">…</span></div>
   <div class="ti"><span class="ts">CAC 40</span><span class="tp" id="tcac">…</span><span id="tcacc">—</span></div>
   <div class="ti"><span class="ts">S&P 500</span><span class="tp" id="tsp">…</span><span id="tspc">—</span></div>
   <div class="ti"><span class="ts">GOLD</span><span class="tp" id="tgold">…</span><span id="tgoldc">—</span></div>
   <div class="ti"><span class="ts">EUR/USD</span><span class="tp" id="teur">…</span><span id="teurc">—</span></div>
   <div class="ti"><span class="ts" style="color:#F7931A">₿ BTC</span><span id="tb2" class="btc-price tp">…</span><span id="tc2">—</span></div>
   <div class="ti"><span class="ts">ETH</span><span class="tp" id="te2">…</span><span id="tec2">—</span></div>
+  <div class="ti"><span class="ts" style="color:#00D4AA">🌊 stETH APR</span><span class="tp" id="tstetha2">…</span></div>
   <div class="ti"><span class="ts">CAC 40</span><span class="tp" id="tcac2">…</span><span id="tcacc2">—</span></div>
   <div class="ti"><span class="ts">S&P 500</span><span class="tp" id="tsp2">…</span><span id="tspc2">—</span></div>
   <div class="ti"><span class="ts">GOLD</span><span class="tp" id="tgold2">…</span><span id="tgoldc2">—</span></div>
@@ -542,7 +544,26 @@ function slotUpdate(newWealth,newGain){
   _prevWealth=newWealth;
   _prevGain=newGain;
 }
-// ── PRIVACY MODE ──────────────────────────────────────────
+// ── stETH APR ─────────────────────────────────────────────
+async function fetchStethApr(){
+  try{
+    const r=await fetch('https://eth-api.lido.fi/v1/protocol/steth/apr/last',{signal:AbortSignal.timeout(5000)});
+    const d=await r.json();
+    const apr=d?.data?.apr;
+    if(apr>0){
+      const txt=apr.toFixed(2)+'%';
+      ['tstetha','tstetha2'].forEach(id=>{
+        const e=document.getElementById(id);
+        if(e){e.textContent=txt;e.style.color='#00D4AA';}
+      });
+    }
+  }catch(e){
+    ['tstetha','tstetha2'].forEach(id=>{
+      const el=document.getElementById(id);
+      if(el)el.textContent='N/A';
+    });
+  }
+}
 function togglePrivacy(){
   const isPrivate=document.body.classList.toggle('privacy');
   const btn=document.getElementById('privacy-btn');
@@ -1263,8 +1284,10 @@ setInterval(()=>{
   render();                  // Affichage immédiat
   fetchCrypto();
   fetchMarketIndices();
+  fetchStethApr();
   setInterval(fetchCrypto,60000);
   setInterval(fetchMarketIndices,300000);
+  setInterval(fetchStethApr,3600000); // MAJ toutes les heures
   setTimeout(()=>{
     fetchStocksBackground();
     setTimeout(autoSnapshot,5000);
