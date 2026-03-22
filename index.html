@@ -553,35 +553,38 @@ async function refreshAllPrices(){
   const btn=document.getElementById('snap-btn');
   if(btn){btn.textContent='⏳ Actualisation…';btn.disabled=true;}
   try{
-    // Capturer valeurs AVANT
+    // Valeurs AVANT
     const before=tot();
     const beforeGain=before-S.pos.reduce((s,p)=>s+(p.quantity*(p.avg_cost||0)),0);
 
+    // Charger BTC/ETH en premier (rapide ~1s)
     await fetchCrypto();
-    await fetchStocksBackground();
 
-    // Capturer valeurs APRÈS
+    // Animer immédiatement après BTC/ETH
     const after=tot();
     const afterGain=after-S.pos.reduce((s,p)=>s+(p.quantity*(p.avg_cost||0)),0);
 
-    // Re-render le dashboard avec nouvelles valeurs
-    if(S.tab==='dashboard')render();
+    if(S.tab==='dashboard'){
+      render();
+      requestAnimationFrame(()=>{
+        requestAnimationFrame(()=>{
+          const wEl=document.getElementById('wealth-val');
+          const gEl=document.getElementById('gain-val');
+          if(wEl&&Math.abs(after-before)>1){
+            animateCounter(wEl,before,after,fmtWealth,1000);
+            wEl.style.color='#fff';
+            setTimeout(()=>{wEl.style.color='#F7931A';},300);
+          }
+          if(gEl&&Math.abs(afterGain-beforeGain)>1){
+            animateCounter(gEl,beforeGain,afterGain,
+              v=>(v>=0?'+':'')+fe(v),1000);
+          }
+        });
+      });
+    }
 
-    // Animer APRÈS que le DOM est recréé
-    setTimeout(()=>{
-      const wEl=document.getElementById('wealth-val');
-      const gEl=document.getElementById('gain-val');
-      if(wEl&&Math.abs(after-before)>1){
-        animateCounter(wEl,before,after,fmtWealth,800);
-        // Flash couleur
-        wEl.style.transition='color 0.2s';
-        wEl.style.color='#fff';
-        setTimeout(()=>{wEl.style.color='#F7931A';wEl.style.transition='';},200);
-      }
-      if(gEl&&Math.abs(afterGain-beforeGain)>1){
-        animateCounter(gEl,beforeGain,afterGain,(v)=>(v>=0?'+':'')+fe(v),800);
-      }
-    },50);
+    // Actions en arrière-plan (sans animation)
+    fetchStocksBackground();
 
     if(btn){btn.textContent='✅ Mis à jour !';btn.style.background='#00D4AA';}
     setTimeout(()=>{
