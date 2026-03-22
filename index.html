@@ -157,6 +157,13 @@
     }
     .bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:#0a0a0a;border-top:1px solid #1a1a1a;z-index:200;padding:6px 0 calc(6px + env(safe-area-inset-bottom))}
     @media(max-width:768px){.bottom-nav{display:flex;justify-content:space-around;align-items:center}.cnt{padding-bottom:80px}}
+    /* ── PRIVACY MODE ── */
+    body.privacy .cnt{filter:blur(8px);pointer-events:none;user-select:none;transition:filter 0.3s}
+    body.privacy .tkb{filter:blur(8px);transition:filter 0.3s}
+    body.privacy .bottom-nav{filter:blur(8px);transition:filter 0.3s}
+    body.privacy #privacy-btn{color:#F7931A !important;border-color:#F7931A !important}
+    .cnt{transition:filter 0.3s}
+    .tkb{transition:filter 0.3s}
     .bnav-item{display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;padding:4px 8px;border-radius:6px;-webkit-tap-highlight-color:transparent;touch-action:manipulation;flex:1}
     .bnav-item.active .bnav-icon,.bnav-item.active .bnav-label{color:#F7931A}
     .bnav-icon{font-size:18px;line-height:1}
@@ -172,7 +179,7 @@
       <div class="ls">₿ Personal Wealth Terminal</div>
     </div>
     <div style="display:flex;align-items:center;gap:8px">
-      <button id="theme-btn" onclick="toggleTheme()" style="background:none;border:1px solid #2a2a2a;border-radius:20px;padding:3px 10px;font-size:11px;cursor:pointer;color:#555;font-family:'IBM Plex Mono',monospace;transition:all 0.2s">☀️</button>
+      <button id="privacy-btn" onclick="togglePrivacy()" style="background:none;border:1px solid #2a2a2a;border-radius:20px;padding:3px 10px;font-size:11px;cursor:pointer;color:#555;font-family:'IBM Plex Mono',monospace;transition:all 0.2s">👁️</button>
       <span class="ld"></span>
       <span class="htime" id="clk"></span>
     </div>
@@ -535,19 +542,13 @@ function slotUpdate(newWealth,newGain){
   _prevWealth=newWealth;
   _prevGain=newGain;
 }
-function toggleTheme(){
-  const isLight=document.body.classList.toggle('light');
-  const btn=document.getElementById('theme-btn');
-  if(btn)btn.textContent=isLight?'🌙':'☀️';
-  localStorage.setItem('theme',isLight?'light':'dark');
+// ── PRIVACY MODE ──────────────────────────────────────────
+function togglePrivacy(){
+  const isPrivate=document.body.classList.toggle('privacy');
+  const btn=document.getElementById('privacy-btn');
+  if(btn)btn.textContent=isPrivate?'🔒':'👁️';
 }
-function initTheme(){
-  if(localStorage.getItem('theme')==='light'){
-    document.body.classList.add('light');
-    const btn=document.getElementById('theme-btn');
-    if(btn)btn.textContent='🌙';
-  }
-}
+function initTheme(){}
 
 async function refreshAllPrices(){
   const btn=document.getElementById('snap-btn');
