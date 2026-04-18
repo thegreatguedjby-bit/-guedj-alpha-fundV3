@@ -1914,33 +1914,47 @@ setInterval(()=>{
 
 // ── NEWS IA ───────────────────────────────────────────────
 let newsCache={}; // ticker -> {articles, ts}
-let newsLoading=false;
 
 async function fetchNewsForTicker(ticker){
-  // Use Groq with web search context via a prompt
-  const prompt=`Tu es un assistant financier. Pour le titre boursier "${ticker}", génère un résumé fictif mais plausible de 3 actualités récentes importantes (dans les 7 derniers jours) qui pourraient impacter ce titre. Réponds UNIQUEMENT en JSON valide avec ce format exact, sans aucun texte avant ou après:
+  const isBtc=ticker==='BTC';
+  const isEth=ticker==='ETH';
+  const price=isBtc&&S.btc>0?`Prix actuel : ${f(S.btc,0)}€`:isEth&&S.eth>0?`Prix actuel : ${f(S.eth,0)}€`:'';
+  const today=new Date().toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'});
+
+  const prompt=`Tu es un journaliste financier expert. Aujourd'hui nous sommes le ${today}.${price?' '+price:''}
+Génère 3 actualités RÉCENTES et RÉALISTES pour "${ticker}" basées sur les tendances actuelles du marché.
+Pour BTC/ETH : parle de réglementation crypto, adoption institutionnelle, prix, ETFs, macro.
+Pour les actions/ETFs : parle de résultats, analyse, secteur, macro-économie européenne/mondiale.
+Varie les sentiments (pas que du positif). Sois précis et crédible.
+Réponds UNIQUEMENT en JSON strict, sans markdown, sans texte avant ou après :
 {"articles":[
-  {"title":"titre court","summary":"2-3 phrases de résumé","sentiment":"positive|negative|neutral","source":"nom source fictive","date":"date récente"},
-  {"title":"...","summary":"...","sentiment":"...","source":"...","date":"..."},
-  {"title":"...","summary":"...","sentiment":"...","source":"...","date":"..."}
+{"title":"titre accrocheur max 10 mots","summary":"2-3 phrases précises et informatives","sentiment":"positive|negative|neutral","source":"Financial Times|Bloomberg|Reuters|Les Echos|BFM Bourse|CoinDesk|L'Agefi","date":"date en français ex: 17 avril 2026"},
+{"title":"...","summary":"...","sentiment":"...","source":"...","date":"..."},
+{"title":"...","summary":"...","sentiment":"...","source":"...","date":"..."}
 ]}`;
 
-  const resp = await fetch('https://api.groq.com/openai/v1/chat/completions',{
+  const resp=await fetch('https://api.groq.com/openai/v1/chat/completions',{
     method:'POST',
     headers:{'Content-Type':'application/json','Authorization':'Bearer '+CLAUDE_KEY},
     body:JSON.stringify({
       model:'llama-3.3-70b-versatile',
-      max_tokens:600,
-      temperature:0.7,
+      max_tokens:700,
+      temperature:0.75,
       messages:[{role:'user',content:prompt}]
     })
   });
   const data=await resp.json();
   const text=data?.choices?.[0]?.message?.content||'{}';
   try{
-    const clean=text.replace(/```json|```/g,'').trim();
-    return JSON.parse(clean);
-  }catch(e){return {articles:[]};}
+    const clean=text.replace(/```json[\s\S]*?```|```/g,'').trim();
+    const parsed=JSON.parse(clean);
+    return parsed;
+  }catch(e){
+    // Try to extract JSON from the response
+    const match=text.match(/\{[\s\S]*\}/);
+    if(match)try{return JSON.parse(match[0]);}catch(e2){}
+    return {articles:[]};
+  }
 }
 
 function newsCardHTML(ticker,data,isLoading){
@@ -1972,10 +1986,14 @@ function newsCardHTML(ticker,data,isLoading){
   const neg=sentiments.filter(s=>s==='negative').length;
   const globalSent=pos>neg?'positive':neg>pos?'negative':'neutral';
 
+  const isBtcCard=ticker==='BTC';
+  const tickerColor=isBtcCard?'#F7931A':ticker==='ETH'?'#A78BFA':'#fff';
+  const cardBorder=isBtcCard?'border-color:rgba(247,147,26,0.2)':'';
   return `
-  <div class="card" style="padding:16px">
+  <div class="card" style="padding:16px;margin-bottom:0;${cardBorder}">
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
-      <div style="font-size:14px;font-weight:800;color:#fff">${ticker}</div>
+      <div style="font-size:15px;font-weight:800;color:${tickerColor}">${isBtcCard?'₿ ':''}${ticker}</div>
+      ${isBtcCard&&S.btc>0?`<div style="font-size:10px;color:rgba(247,147,26,0.6);font-weight:600">${f(S.btc,0)}€</div>`:''}
       <div style="height:1px;flex:1;background:rgba(255,255,255,0.06)"></div>
       <div style="font-size:10px;font-weight:700;color:${sentColor[globalSent]};background:${sentBg[globalSent]};padding:3px 8px;border-radius:6px">${sentIcon[globalSent]} ${globalSent==='positive'?'Positif':globalSent==='negative'?'Négatif':'Neutre'}</div>
     </div>
@@ -1994,81 +2012,64 @@ function newsCardHTML(ticker,data,isLoading){
 }
 
 async function renderNews(){
-  const tickers=[...new Set(
+  // BTC toujours en premier, puis tickers du portefeuille
+  const portfolioTickers=[...new Set(
     S.pos
-      .filter(p=>p.assets?.type!=='cash'&&p.assets?.type!=='epargne')
-      .map(p=>p.assets?.ticker)
-      .filter(Boolean)
-  )].slice(0,6); // Max 6 tickers pour ne pas exploser le quota
-
+      .filter(p=>p.assets?.type!=='cash'&&p.assets?.type!=='epargne'&&p.assets?.ticker!=='BTC'&&p.assets?.ticker!=='ETH')
+      .map(p=>p.assets?.ticker).filter(Boolean)
+  )];
+  // Shuffle pour varier à chaque ouverture
+  const shuffled=[...portfolioTickers].sort(()=>Math.random()-0.5).slice(0,4);
+  const tickers=['BTC',...shuffled];
   const today=new Date().toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'});
 
   document.getElementById('cnt').innerHTML=`
 <div style="display:grid;gap:14px">
-
   <!-- Header -->
-  <div style="background:rgba(74,158,255,0.07);border:1px solid rgba(74,158,255,0.15);border-radius:18px;padding:14px 16px">
+  <div style="background:rgba(247,147,26,0.07);border:1px solid rgba(247,147,26,0.15);border-radius:18px;padding:14px 16px">
     <div style="display:flex;align-items:center;justify-content:space-between">
       <div style="display:flex;align-items:center;gap:10px">
-        <div style="width:36px;height:36px;border-radius:12px;background:rgba(74,158,255,0.12);border:1px solid rgba(74,158,255,0.2);display:flex;align-items:center;justify-content:center;font-size:16px">📰</div>
+        <div style="width:36px;height:36px;border-radius:12px;background:rgba(247,147,26,0.12);border:1px solid rgba(247,147,26,0.2);display:flex;align-items:center;justify-content:center;font-size:16px">📰</div>
         <div>
           <div style="font-size:15px;font-weight:700;color:#fff">News IA</div>
-          <div style="font-size:10px;color:rgba(255,255,255,0.3);margin-top:1px">Actualités générées par IA · ${today}</div>
+          <div style="font-size:10px;color:rgba(255,255,255,0.3);margin-top:1px">${today} · BTC + ${shuffled.length} positions aléatoires</div>
         </div>
       </div>
-      <button onclick="newsCache={};renderNews()" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:6px 10px;font-size:10px;color:rgba(255,255,255,0.4);cursor:pointer;font-family:'Inter',sans-serif;-webkit-tap-highlight-color:transparent">↺ Rafraîchir</button>
+      <button onclick="newsCache={};renderNews()" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:6px 10px;font-size:10px;color:rgba(255,255,255,0.4);cursor:pointer;font-family:'Inter',sans-serif;-webkit-tap-highlight-color:transparent">↺ Nouvelles</button>
     </div>
-    <div style="margin-top:10px;font-size:10px;color:rgba(255,255,255,0.25);line-height:1.5">
-      ⚠️ Les actualités sont générées par IA à titre informatif uniquement. Toujours vérifier auprès de sources officielles avant toute décision d'investissement.
+    <div style="margin-top:8px;font-size:10px;color:rgba(255,255,255,0.2)">
+      ⚠️ Actualités générées par IA — vérifier auprès de sources officielles avant toute décision.
     </div>
   </div>
 
-  <!-- Sélecteur de tickers -->
-  <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none" id="news-ticker-bar">
-    ${tickers.map((t,i)=>`
-    <button id="news-btn-${t}" onclick="showNewsTicker('${t}')"
-      style="background:${i===0?'rgba(74,158,255,0.15)':'rgba(255,255,255,0.05)'};border:1px solid ${i===0?'rgba(74,158,255,0.3)':'rgba(255,255,255,0.1)'};border-radius:20px;padding:7px 14px;font-size:11px;font-weight:600;color:${i===0?'#4A9EFF':'rgba(255,255,255,0.4)'};cursor:pointer;white-space:nowrap;flex-shrink:0;font-family:'Inter',sans-serif;transition:all 0.15s;-webkit-tap-highlight-color:transparent">
-      ${t}
-    </button>`).join('')}
+  <!-- Toutes les news en cartes empilées -->
+  <div id="news-all-cards">
+    ${tickers.map(t=>`<div id="news-card-${t}">${newsCardHTML(t,newsCache[t],!newsCache[t])}</div>`).join('')}
   </div>
-
-  <!-- Zone d'affichage des news -->
-  <div id="news-content">
-    ${tickers.length===0?
-      '<div class="card"><div class="empty">Aucune position trouvée</div></div>':
-      newsCardHTML(tickers[0],newsCache[tickers[0]],!newsCache[tickers[0]])
-    }
-  </div>
-
 </div>`;
 
-  // Charger le premier ticker automatiquement si pas en cache
-  if(tickers.length>0&&!newsCache[tickers[0]]){
-    loadNewsTicker(tickers[0]);
-  }
+  // Charger en parallèle tous les tickers non cachés
+  const toLoad=tickers.filter(t=>!newsCache[t]);
+  toLoad.forEach(t=>loadNewsCard(t));
 }
 
-async function loadNewsTicker(ticker){
+async function loadNewsCard(ticker){
+  const el=document.getElementById('news-card-'+ticker);
+  if(!el)return;
   if(newsCache[ticker]){
-    document.getElementById('news-content').innerHTML=newsCardHTML(ticker,newsCache[ticker],false);
+    el.innerHTML=newsCardHTML(ticker,newsCache[ticker],false);
     return;
   }
-  // Afficher skeleton
-  document.getElementById('news-content').innerHTML=newsCardHTML(ticker,null,true);
+  el.innerHTML=newsCardHTML(ticker,null,true);
   const data=await fetchNewsForTicker(ticker);
   newsCache[ticker]=data;
-  document.getElementById('news-content').innerHTML=newsCardHTML(ticker,data,false);
+  // Re-check element still exists (user may have navigated away)
+  const el2=document.getElementById('news-card-'+ticker);
+  if(el2)el2.innerHTML=newsCardHTML(ticker,data,false);
 }
 
 function showNewsTicker(ticker){
-  // Update active button style
-  document.querySelectorAll('[id^="news-btn-"]').forEach(btn=>{
-    const isActive=btn.id===`news-btn-${ticker}`;
-    btn.style.background=isActive?'rgba(74,158,255,0.15)':'rgba(255,255,255,0.05)';
-    btn.style.borderColor=isActive?'rgba(74,158,255,0.3)':'rgba(255,255,255,0.1)';
-    btn.style.color=isActive?'#4A9EFF':'rgba(255,255,255,0.4)';
-  });
-  loadNewsTicker(ticker);
+  loadNewsCard(ticker);
 }
 
 (async()=>{
