@@ -28,6 +28,7 @@
     @keyframes slot-up{0%{transform:translateY(100%);opacity:0}60%{transform:translateY(-8%);opacity:1}100%{transform:translateY(0);opacity:1}}
     @keyframes slot-flash{0%,100%{color:#F7931A}25%{color:#fff}50%{color:#F7931A}75%{color:#ffb347}}
     @keyframes blink{0%,100%{opacity:0.2;transform:scale(0.8)}50%{opacity:1;transform:scale(1.1)}}
+    @keyframes slideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}
     @keyframes sc{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
 
     .slot-anim{animation:slot-up 0.4s cubic-bezier(0.23,1,0.32,1) forwards,slot-flash 0.6s ease forwards}
@@ -367,35 +368,50 @@
 
 <!-- BOTTOM NAV MOBILE -->
 <nav class="bottom-nav" id="bottom-nav">
-  <div class="bnav-item active" onclick="goTabMobile('dashboard',this)">
+  <div class="bnav-item active" id="bnav-dashboard" onclick="goTabMobile('dashboard',this)">
     <div class="bnav-icon">📊</div>
     <div class="bnav-label">Dashboard</div>
   </div>
-  <div class="bnav-item" onclick="goTabMobile('portfolio',this)">
+  <div class="bnav-item" id="bnav-portfolio" onclick="goTabMobile('portfolio',this)">
     <div class="bnav-icon">💼</div>
     <div class="bnav-label">Positions</div>
   </div>
-  <div class="bnav-item" onclick="goTabMobile('performance',this)">
+  <div class="bnav-item" id="bnav-performance" onclick="goTabMobile('performance',this)">
     <div class="bnav-icon">📈</div>
     <div class="bnav-label">Perf.</div>
   </div>
-  <div class="bnav-item" onclick="goTabMobile('dividends',this)">
-    <div class="bnav-icon">💰</div>
-    <div class="bnav-label">Divid.</div>
-  </div>
-  <div class="bnav-item" onclick="goTabMobile('gestion',this)">
-    <div class="bnav-icon">⚙️</div>
-    <div class="bnav-label">Gestion</div>
-  </div>
-  <div class="bnav-item" onclick="goTabMobile('advisor',this)">
+  <div class="bnav-item" id="bnav-advisor" onclick="goTabMobile('advisor',this)">
     <div class="bnav-icon">✦</div>
     <div class="bnav-label">Advisor</div>
   </div>
-  <div class="bnav-item" onclick="goTabMobile('news',this)">
-    <div class="bnav-icon">📰</div>
-    <div class="bnav-label">News</div>
+  <div class="bnav-item" id="bnav-more" onclick="toggleMoreMenu()">
+    <div class="bnav-icon">⋯</div>
+    <div class="bnav-label">Plus</div>
   </div>
 </nav>
+
+<!-- MORE MENU (slide-up) -->
+<div id="more-menu" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:300;background:rgba(10,10,15,0.98);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-top:1px solid rgba(255,255,255,0.1);border-radius:24px 24px 0 0;padding:20px 16px calc(24px + env(safe-area-inset-bottom));animation:slideUp 0.25s cubic-bezier(0.23,1,0.32,1)">
+  <div style="width:36px;height:4px;background:rgba(255,255,255,0.15);border-radius:2px;margin:0 auto 20px"></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+    <button onclick="closeMoreMenu();goTabMobile('dividends',document.getElementById('bnav-more'))" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:16px 12px;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all 0.15s" ontouchstart="this.style.background='rgba(255,255,255,0.1)'" ontouchend="this.style.background='rgba(255,255,255,0.05)'">
+      <span style="font-size:26px">💰</span><span style="font-size:12px;font-weight:600;color:rgba(255,255,255,0.7)">Dividendes</span>
+    </button>
+    <button onclick="closeMoreMenu();goTabMobile('news',document.getElementById('bnav-more'))" style="background:rgba(74,158,255,0.07);border:1px solid rgba(74,158,255,0.15);border-radius:16px;padding:16px 12px;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all 0.15s" ontouchstart="this.style.background='rgba(74,158,255,0.15)'" ontouchend="this.style.background='rgba(74,158,255,0.07)'">
+      <span style="font-size:26px">📰</span><span style="font-size:12px;font-weight:600;color:#4A9EFF">News IA</span>
+    </button>
+    <button onclick="closeMoreMenu();goTabMobile('history',document.getElementById('bnav-more'))" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:16px 12px;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all 0.15s" ontouchstart="this.style.background='rgba(255,255,255,0.1)'" ontouchend="this.style.background='rgba(255,255,255,0.05)'">
+      <span style="font-size:26px">📅</span><span style="font-size:12px;font-weight:600;color:rgba(255,255,255,0.7)">Historique</span>
+    </button>
+    <button onclick="closeMoreMenu();goTabMobile('gestion',document.getElementById('bnav-more'))" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:16px 12px;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all 0.15s" ontouchstart="this.style.background='rgba(255,255,255,0.1)'" ontouchend="this.style.background='rgba(255,255,255,0.05)'">
+      <span style="font-size:26px">⚙️</span><span style="font-size:12px;font-weight:600;color:rgba(255,255,255,0.7)">Gestion</span>
+    </button>
+    <button onclick="closeMoreMenu();goTabMobile('import',document.getElementById('bnav-more'))" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:16px 12px;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all 0.15s" ontouchstart="this.style.background='rgba(255,255,255,0.1)'" ontouchend="this.style.background='rgba(255,255,255,0.05)'">
+      <span style="font-size:26px">📄</span><span style="font-size:12px;font-weight:600;color:rgba(255,255,255,0.7)">Import PDF</span>
+    </button>
+  </div>
+</div>
+<div id="more-overlay" onclick="closeMoreMenu()" style="display:none;position:fixed;inset:0;z-index:290;background:rgba(0,0,0,0.5)"></div>
 
 
 
@@ -1454,38 +1470,74 @@ function renderPerformance(){
 
 // ── DIVIDENDS ─────────────────────────────────────────────
 function renderDividends(){
-  const rec=S.divs.filter(d=>d.received),pend=S.divs.filter(d=>!d.received);
-  const sorted=[...S.divs].sort((a,b)=>a.ex_date>b.ex_date?1:-1);
-  const tR=rec.reduce((s,d)=>s+d.amount,0);
+  const today=new Date().toISOString().slice(0,10);
+  const curYear=new Date().getFullYear();
+
+  // Auto-detect: dividendes dont pay_date est passée mais pas marqués reçus
+  const overdueIds=S.divs.filter(d=>!d.received&&d.pay_date&&d.pay_date<today).map(d=>d.id);
+
+  const rec=S.divs.filter(d=>d.received);
+  // Considérer les overdue comme reçus pour les calculs
+  const effectivelyReceived=S.divs.filter(d=>d.received||(d.pay_date&&d.pay_date<today));
+  const pend=S.divs.filter(d=>!d.received&&(!d.pay_date||d.pay_date>=today));
+  const tR=effectivelyReceived.reduce((s,d)=>s+d.amount,0);
   const tP=pend.reduce((s,d)=>s+d.amount,0);
   const tA=S.divs.reduce((s,d)=>s+d.amount,0);
+  const sorted=[...S.divs].sort((a,b)=>a.ex_date>b.ex_date?1:-1);
+
+  const statusBadge=(d)=>{
+    const isOverdue=!d.received&&d.pay_date&&d.pay_date<today;
+    const isPending=!d.received&&(!d.pay_date||d.pay_date>=today);
+    const isFuture=!d.pay_date||d.pay_date>today;
+    if(d.received) return `<span style="padding:3px 10px;border-radius:6px;font-size:9px;font-weight:700;background:rgba(0,212,170,0.12);color:#00D4AA">✓ Reçu</span>`;
+    if(isOverdue) return `<button onclick="markDivReceived('${d.id}')" style="padding:3px 10px;border-radius:6px;font-size:9px;font-weight:700;background:rgba(255,147,26,0.12);color:#F7931A;border:1px solid rgba(247,147,26,0.25);cursor:pointer;font-family:'Inter',sans-serif;-webkit-tap-highlight-color:transparent">⚠️ Marquer reçu</button>`;
+    return `<span style="padding:3px 10px;border-radius:6px;font-size:9px;font-weight:600;background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.3)">${d.pay_date?'⏳ '+d.pay_date:'En attente'}</span>`;
+  };
 
   document.getElementById('cnt').innerHTML=`
 <div style="display:grid;gap:16px">
+  ${overdueIds.length>0?`
+  <div style="background:rgba(247,147,26,0.08);border:1px solid rgba(247,147,26,0.2);border-radius:16px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+    <div>
+      <div style="font-size:12px;font-weight:700;color:#F7931A;margin-bottom:2px">⚠️ ${overdueIds.length} dividende${overdueIds.length>1?'s':''} en retard de confirmation</div>
+      <div style="font-size:10px;color:rgba(255,255,255,0.4)">La date de paiement est passée — avez-vous reçu ces dividendes ?</div>
+    </div>
+    <button onclick="markAllOverdue(${JSON.stringify(overdueIds)})" style="background:#F7931A;border:none;border-radius:10px;padding:8px 14px;font-size:11px;font-weight:700;color:#000;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap;-webkit-tap-highlight-color:transparent">Tout marquer reçu</button>
+  </div>`:''}
   <div class="g3">
-    <div class="card"><div class="ct">Total Reçu 2025</div><div class="sv" style="color:#00D4AA">${fe(tR)}</div></div>
-    <div class="card"><div class="ct">En Attente</div><div class="sv">${fe(tP)}</div></div>
-    <div class="card" style="border-color:#F7931A22"><div class="ct ct-orange">Estimation Annuelle</div><div class="sv" style="color:#F7931A">${fe(tA)}</div></div>
+    <div class="card"><div class="ct">Reçu ${curYear}</div><div class="sv" style="color:#00D4AA">${fe(tR)}</div></div>
+    <div class="card"><div class="ct">À venir</div><div class="sv">${fe(tP)}</div></div>
+    <div class="card" style="border-color:rgba(247,147,26,0.2)"><div class="ct ct-orange">Total annuel</div><div class="sv" style="color:#F7931A">${fe(tA)}</div></div>
   </div>
   <div class="card">
     <div class="ct">Calendrier des Dividendes (${sorted.length})</div>
     <div class="tbl-wrap"><table class="tbl">
       <thead><tr>
         <th style="text-align:left">Ticker</th>
-        <th style="text-align:left">Société</th>
         <th>Ex-Date</th><th>Paiement</th><th>Montant</th><th>Statut</th>
       </tr></thead>
-      <tbody>${sorted.map(d=>`<tr>
-        <td style="text-align:left;font-weight:700;color:#fff;font-size:12px">${d.assets?.ticker||'?'}</td>
-        <td style="text-align:left;font-size:10px;color:#444">${(d.assets?.name||'').slice(0,20)}</td>
-        <td style="color:#666">${d.ex_date}</td>
-        <td style="color:#666">${d.pay_date||'—'}</td>
+      <tbody>${sorted.map(d=>`<tr style="${!d.received&&d.pay_date&&d.pay_date<today?'background:rgba(247,147,26,0.04)':''}">
+        <td style="text-align:left;font-weight:700;color:#fff;font-size:13px">${d.assets?.ticker||'?'}</td>
+        <td style="color:rgba(255,255,255,0.4);font-size:11px">${d.ex_date||'—'}</td>
+        <td style="color:${d.pay_date&&d.pay_date<today&&!d.received?'#F7931A':'rgba(255,255,255,0.4)'};font-size:11px;font-weight:${d.pay_date&&d.pay_date<today&&!d.received?'700':'400'}">${d.pay_date||'—'}</td>
         <td style="font-weight:700;color:#fff">${f(d.amount,2)} €</td>
-        <td><span style="padding:2px 8px;border-radius:2px;font-size:9px;font-weight:600;background:${d.received?'rgba(0,212,170,0.15)':'rgba(255,255,255,0.05)'};color:${d.received?'#00D4AA':'#555'}">${d.received?'✓ Reçu':'En attente'}</span></td>
+        <td>${statusBadge(d)}</td>
       </tr>`).join('')}</tbody>
     </table></div>
   </div>
 </div>`;
+}
+
+async function markDivReceived(id){
+  await dbPatch('dividends',`?id=eq.${id}`,{received:true,paid:true});
+  await loadData();
+  renderDividends();
+}
+
+async function markAllOverdue(ids){
+  await Promise.all(ids.map(id=>dbPatch('dividends',`?id=eq.${id}`,{received:true,paid:true})));
+  await loadData();
+  renderDividends();
 }
 
 // ── HISTORY ───────────────────────────────────────────────
@@ -1555,8 +1607,20 @@ function renderHistory(){
 }
 
 // ── NAV ───────────────────────────────────────────────────
+function toggleMoreMenu(){
+  const menu=document.getElementById('more-menu');
+  const overlay=document.getElementById('more-overlay');
+  const isOpen=menu.style.display!=='none';
+  menu.style.display=isOpen?'none':'block';
+  overlay.style.display=isOpen?'none':'block';
+}
+function closeMoreMenu(){
+  document.getElementById('more-menu').style.display='none';
+  document.getElementById('more-overlay').style.display='none';
+}
 function goTabMobile(tab,el){
   S.tab=tab;
+  closeMoreMenu();
   // Update bottom nav
   document.querySelectorAll('.bnav-item').forEach(t=>t.classList.remove('active'));
   if(el)el.classList.add('active');
@@ -2022,6 +2086,13 @@ function showNewsTicker(ticker){
     setTimeout(autoSnapshot,5000);
   },3000);
   setInterval(()=>fetchStocksBackground(),300000);
+  // Re-render performance tab after live prices load to keep contributions up to date
+  const origFetchStocks=fetchStocksBackground;
+  fetchStocksBackground=async function(){
+    await origFetchStocks();
+    if(S.tab==='performance')renderPerformance();
+    if(S.tab==='dashboard')renderDashboard();
+  };
   // Vérifier snapshot toutes les heures (si app reste ouverte)
   setInterval(autoSnapshot,3600000);
 
