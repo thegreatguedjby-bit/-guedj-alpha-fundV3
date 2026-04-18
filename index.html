@@ -17,7 +17,7 @@
     ::-webkit-scrollbar{width:3px}::-webkit-scrollbar-track{background:#111}::-webkit-scrollbar-thumb{background:#333}
 
     /* ── HEADER ── */
-    .hd{background:#0a0a0a;border-bottom:1px solid #1a1a1a;padding:0 16px;position:sticky;top:0;z-index:100}
+    .hd{background:rgba(8,8,8,0.95);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid #1a1a1a;padding:0 16px;position:sticky;top:0;z-index:100}
     .ht{display:flex;align-items:center;justify-content:space-between;padding:10px 0 0}
     .logo-wrap{display:flex;flex-direction:column;gap:1px}
     .lt{font-family:'Playfair Display',serif;font-size:20px;font-weight:900;color:#fff;letter-spacing:0.08em}
@@ -45,13 +45,13 @@
     /* ── LAYOUT ── */
     .cnt{padding:12px 14px;max-width:1400px;margin:0 auto}
     @media(min-width:768px){.cnt{padding:20px 24px}}
-    .card{background:#0f0f0f;border:1px solid #1f1f1f;border-radius:6px;padding:14px;transition:border-color 0.2s}
+    .card{background:#0f0f0f;border:1px solid #1c1c1c;border-radius:10px;padding:14px;transition:border-color 0.2s,box-shadow 0.2s}
     @media(min-width:768px){.card{padding:18px}}
     .card-btc{border-color:#F7931A22}
     .ct{font-size:8px;letter-spacing:0.12em;text-transform:uppercase;color:#555;margin-bottom:8px}
     .ct-orange{color:#F7931A}
 
-    .wealth-card{background:linear-gradient(135deg,#0f0f0f 0%,#111008 100%);border:1px solid #2a2a1a;border-radius:8px;padding:20px 18px;position:relative;overflow:hidden}
+    .wealth-card{background:linear-gradient(145deg,#111008 0%,#0f0f0f 40%,#0d0d0a 100%);border:1px solid #2a2a1a;border-radius:12px;padding:20px 18px;position:relative;overflow:hidden}
     .wealth-label{font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:#666;margin-bottom:6px}
     /* ── WEALTH VALUE ── */
     .wv{font-family:'Inter',sans-serif;font-size:48px;font-weight:700;color:#F7931A;line-height:1;letter-spacing:-0.01em;font-variant-numeric:tabular-nums}
@@ -69,7 +69,7 @@
     @media(min-width:900px){.g4{grid-template-columns:repeat(4,1fr)}}
 
     /* ── STAT CARDS ── */
-    .stat-card{background:#0f0f0f;border:1px solid #1f1f1f;border-radius:6px;padding:12px 14px}
+    .stat-card{background:#0f0f0f;border:1px solid #1c1c1c;border-radius:10px;padding:12px 14px}
     .stat-card-label{font-size:7px;letter-spacing:0.12em;text-transform:uppercase;color:#555;margin-bottom:4px}
     .stat-card-val{font-size:20px;font-weight:700;font-family:'Playfair Display',serif;color:#fff}
     @media(min-width:768px){.stat-card-val{font-size:24px}}
@@ -155,8 +155,26 @@
       .col-hide{display:none}
       .tbl td,.tbl th{padding:7px 5px;font-size:9px}
     }
-    .bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:#0a0a0a;border-top:1px solid #1a1a1a;z-index:200;padding:6px 0 calc(6px + env(safe-area-inset-bottom))}
-    @media(max-width:768px){.bottom-nav{display:flex;justify-content:space-around;align-items:center}.cnt{padding-bottom:80px}}
+    /* ── BOTTOM NAV ── */
+    .bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;
+      background:rgba(8,8,8,0.92);
+      backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+      border-top:1px solid #1f1f1f;
+      z-index:200;
+      padding:8px 6px calc(10px + env(safe-area-inset-bottom))}
+    @media(max-width:768px){
+      .bottom-nav{display:flex;justify-content:space-around;align-items:flex-end}
+      .cnt{padding-bottom:90px}
+      .tabs{display:none}
+      .tkb{display:none}
+      .card{border-radius:14px;padding:14px}
+      .wealth-card{border-radius:16px;padding:18px 16px}
+      .stat-card{border-radius:12px;padding:13px 14px}
+      .wv{font-size:40px}
+      .g2{gap:8px}
+      .g3{gap:8px}
+      .g4{gap:8px}
+    }
     /* ── PRIVACY MODE ── */
     body.privacy .cnt{filter:blur(8px);pointer-events:none;user-select:none;transition:filter 0.3s}
     body.privacy .tkb{filter:blur(8px);transition:filter 0.3s}
@@ -164,10 +182,31 @@
     body.privacy #privacy-btn{color:#F7931A !important;border-color:#F7931A !important}
     .cnt{transition:filter 0.3s}
     .tkb{transition:filter 0.3s}
-    .bnav-item{display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;padding:4px 8px;border-radius:6px;-webkit-tap-highlight-color:transparent;touch-action:manipulation;flex:1}
+
+    /* ── BOTTOM NAV ITEMS ── */
+    .bnav-item{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;
+      padding:6px 10px 4px;border-radius:10px;
+      -webkit-tap-highlight-color:transparent;touch-action:manipulation;flex:1;
+      transition:transform 0.1s ease}
+    .bnav-item:active{transform:scale(0.88)}
+    .bnav-item.active{position:relative}
+    .bnav-item.active::before{
+      content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);
+      width:32px;height:2px;border-radius:0 0 3px 3px;
+      background:#F7931A;box-shadow:0 0 8px #F7931A88}
     .bnav-item.active .bnav-icon,.bnav-item.active .bnav-label{color:#F7931A}
-    .bnav-icon{font-size:18px;line-height:1}
-    .bnav-label{font-size:8px;color:#555;letter-spacing:0.05em;text-transform:uppercase;font-family:'IBM Plex Mono',monospace}
+    .bnav-icon{font-size:20px;line-height:1;transition:transform 0.15s ease}
+    .bnav-item.active .bnav-icon{transform:scale(1.12)}
+    .bnav-label{font-size:7px;color:#444;letter-spacing:0.04em;text-transform:uppercase;font-family:'IBM Plex Mono',monospace;transition:color 0.15s}
+
+    /* ── CARD GLOW ON MOBILE ── */
+    @media(max-width:768px){
+      .card-btc{box-shadow:0 0 20px rgba(247,147,26,0.06)}
+      .wealth-card{box-shadow:0 4px 32px rgba(247,147,26,0.08);border-color:#2a2a18}
+      .ht{padding:8px 0 0}
+      .lt{font-size:17px}
+      .ls{font-size:6px}
+    }
 
     /* ── AI ADVISOR ── */
     .ai-chat-wrap{display:flex;flex-direction:column;height:calc(100vh - 220px);min-height:400px}
@@ -203,6 +242,41 @@
     .ai-context-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
     .ai-ctx-pill{background:#0f0f0f;border:1px solid #1f1f1f;border-radius:4px;padding:5px 10px;font-size:9px;color:#555;display:flex;align-items:center;gap:5px}
     .ai-ctx-pill span{color:#aaa;font-weight:600}
+
+    /* ── ORANGE ACCENT BAR ── */
+    .orange-bar{height:2px;background:linear-gradient(90deg,#F7931A,#ffb347,transparent);border-radius:2px;margin-bottom:2px;opacity:0.7}
+
+    /* ── MOBILE TOUCH FEEDBACK ── */
+    @media(max-width:768px){
+      .card{-webkit-tap-highlight-color:transparent}
+      .btn{padding:10px 18px;font-size:11px;border-radius:8px}
+      .fi{padding:11px 12px;border-radius:8px;font-size:15px}
+      /* Donut chart bien centré */
+      canvas{max-width:100%}
+      /* Gains/losers pills plus lisibles */
+      .pr{padding:11px 0}
+      /* AI chat input plus grand sur mobile */
+      .ai-input{font-size:14px;padding:12px 14px}
+      .ai-send{padding:12px 18px;border-radius:8px}
+      .ai-bubble{font-size:11.5px;line-height:1.75}
+      /* Suggestions scrollables horizontalement */
+      .ai-suggestions{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
+      .ai-suggestions::-webkit-scrollbar{display:none}
+      .ai-sugg{flex-shrink:0;padding:7px 14px;font-size:10px}
+      /* Context pills */
+      .ai-context-bar{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+      .ai-context-bar::-webkit-scrollbar{display:none}
+      /* Chat height adapté */
+      .ai-chat-wrap{height:calc(100vh - 260px)}
+    }
+
+    /* ── SCROLL MOMENTUM ── */
+    .tbl-wrap,.ai-messages{-webkit-overflow-scrolling:touch}
+
+    /* ── SAFE AREA ── */
+    @supports(padding-bottom: env(safe-area-inset-bottom)){
+      .bottom-nav{padding-bottom:calc(10px + env(safe-area-inset-bottom))}
+    }
   </style>
 </head>
 <body>
