@@ -168,6 +168,41 @@
     .bnav-item.active .bnav-icon,.bnav-item.active .bnav-label{color:#F7931A}
     .bnav-icon{font-size:18px;line-height:1}
     .bnav-label{font-size:8px;color:#555;letter-spacing:0.05em;text-transform:uppercase;font-family:'IBM Plex Mono',monospace}
+
+    /* ── AI ADVISOR ── */
+    .ai-chat-wrap{display:flex;flex-direction:column;height:calc(100vh - 220px);min-height:400px}
+    .ai-messages{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:12px;padding:4px 0 16px;scrollbar-width:thin}
+    .ai-msg{display:flex;gap:10px;align-items:flex-start;animation:fadeInUp 0.25s ease}
+    @keyframes fadeInUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+    .ai-msg.user{flex-direction:row-reverse}
+    .ai-avatar{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;border:1px solid #2a2a2a}
+    .ai-avatar.bot{background:linear-gradient(135deg,#F7931A22,#0f0f0f);border-color:#F7931A44}
+    .ai-avatar.user{background:#1a1a1a;border-color:#2a2a2a}
+    .ai-bubble{max-width:85%;padding:11px 14px;border-radius:8px;font-size:11px;line-height:1.7;font-family:'IBM Plex Mono',monospace}
+    .ai-bubble.bot{background:#141414;border:1px solid #1f1f1f;color:#ccc;border-radius:2px 8px 8px 8px}
+    .ai-bubble.user{background:#F7931A18;border:1px solid #F7931A33;color:#e0c080;border-radius:8px 2px 8px 8px}
+    .ai-bubble strong{color:#F7931A;font-weight:700}
+    .ai-bubble em{color:#00D4AA;font-style:normal;font-weight:600}
+    .ai-bubble ul{padding-left:16px;margin:6px 0}
+    .ai-bubble li{margin-bottom:3px;color:#aaa}
+    .ai-bubble .ai-tag{display:inline-block;background:rgba(247,147,26,0.1);color:#F7931A;font-size:9px;padding:1px 6px;border-radius:2px;margin:1px}
+    .ai-input-row{display:flex;gap:8px;margin-top:10px}
+    .ai-input{flex:1;background:#141414;border:1px solid #2a2a2a;border-radius:6px;padding:11px 14px;font-size:12px;color:#ccc;font-family:'IBM Plex Mono',monospace;outline:none;resize:none;transition:border-color 0.15s;line-height:1.5}
+    .ai-input:focus{border-color:#F7931A44}
+    .ai-send{background:#F7931A;border:none;border-radius:6px;padding:11px 16px;cursor:pointer;font-size:14px;transition:all 0.15s;flex-shrink:0}
+    .ai-send:hover{background:#e8841a;transform:scale(1.03)}
+    .ai-send:disabled{background:#2a2a2a;cursor:not-allowed;transform:none}
+    .ai-suggestions{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+    .ai-sugg{background:none;border:1px solid #2a2a2a;border-radius:20px;padding:5px 12px;font-size:9px;color:#555;cursor:pointer;font-family:'IBM Plex Mono',monospace;transition:all 0.15s;-webkit-tap-highlight-color:transparent}
+    .ai-sugg:hover{border-color:#F7931A55;color:#F7931A}
+    .ai-typing{display:flex;align-items:center;gap:4px;padding:8px 12px}
+    .ai-dot{width:5px;height:5px;border-radius:50%;background:#F7931A;opacity:0.4;animation:blink 1.2s infinite}
+    .ai-dot:nth-child(2){animation-delay:0.2s}
+    .ai-dot:nth-child(3){animation-delay:0.4s}
+    @keyframes blink{0%,100%{opacity:0.2;transform:scale(0.8)}50%{opacity:1;transform:scale(1.1)}}
+    .ai-context-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+    .ai-ctx-pill{background:#0f0f0f;border:1px solid #1f1f1f;border-radius:4px;padding:5px 10px;font-size:9px;color:#555;display:flex;align-items:center;gap:5px}
+    .ai-ctx-pill span{color:#aaa;font-weight:600}
   </style>
 </head>
 <body>
@@ -192,6 +227,7 @@
     <button class="tab" onclick="goTab('performance',this)">Performance</button>
     <button class="tab" onclick="goTab('dividends',this)">Dividendes</button>
     <button class="tab" onclick="goTab('history',this)">Historique</button>
+    <button class="tab" onclick="goTab('advisor',this)" style="color:#F7931A55">✦ Advisor IA</button>
   </div>
 </header>
 
@@ -239,6 +275,10 @@
     <div class="bnav-icon">⚙️</div>
     <div class="bnav-label">Gestion</div>
   </div>
+  <div class="bnav-item" onclick="goTabMobile('advisor',this)">
+    <div class="bnav-icon">✦</div>
+    <div class="bnav-label">Advisor</div>
+  </div>
 </nav>
 
 <footer class="footer">GUEDJ <span>ALPHA</span> FUND · USAGE STRICTEMENT PERSONNEL · POWERED BY SUPABASE</footer>
@@ -246,6 +286,7 @@
 <script>
 const SU='https://oeyesimamupcpppklhxm.supabase.co';
 const SK='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9leWVzaW1hbXVwY3BwcGtsaHhtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNTk2MzgsImV4cCI6MjA4ODgzNTYzOH0.RJxbrHp20ENpmDbjd36ZmwaCvLRGv9Rbpr4ghRlQz6M';
+const CLAUDE_KEY='VOTRE_CLE_API_CLAUDE_ICI'; // 👈 Remplacez par sk-ant-...
 const SH={'apikey':SK,'Authorization':'Bearer '+SK,'Content-Type':'application/json'};
 pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
@@ -1417,13 +1458,233 @@ function goTab(tab,el){
 }
 function goTabEl(tab){
   S.tab=tab;
-  const tabs=['dashboard','portfolio','import','gestion','performance','dividends','history'];
+  const tabs=['dashboard','portfolio','import','gestion','performance','dividends','history','advisor'];
   document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',tabs[i]===tab));
   render();
 }
 function render(){
-  const map={dashboard:renderDashboard,portfolio:renderPortfolio,import:renderImport,gestion:renderGestion,performance:renderPerformance,dividends:renderDividends,history:renderHistory};
+  const map={dashboard:renderDashboard,portfolio:renderPortfolio,import:renderImport,gestion:renderGestion,performance:renderPerformance,dividends:renderDividends,history:renderHistory,advisor:renderAdvisor};
   (map[S.tab]||renderDashboard)();
+}
+
+// ── AI ADVISOR ────────────────────────────────────────────
+let aiHistory=[]; // {role:'user'|'assistant', content:'...'}
+
+function buildPortfolioContext(){
+  const T=tot();
+  const cost=S.pos.reduce((s,p)=>s+(p.quantity*(p.avg_cost||0)),0);
+  const gain=T-cost, gainPct=cost>0?gain/cost*100:0;
+  const alloc={};
+  S.pos.forEach(p=>{const t=p.assets?.type||'other';alloc[t]=(alloc[t]||0)+gV(p);});
+  const allocStr=Object.entries(alloc).map(([k,v])=>`${k}: ${fe(v)} (${T>0?(v/T*100).toFixed(1):'0'}%)`).join(', ');
+
+  const positions=S.pos.map(p=>{
+    const v=gV(p), c=p.quantity*(p.avg_cost||0), pl=v-c, plPct=c>0?pl/c*100:0;
+    return `- ${p.assets?.ticker} (${p.assets?.type}): ${f(p.quantity,p.quantity<10?4:2)} unités, valeur ${fe(v)}, P&L ${plPct>=0?'+':''}${plPct.toFixed(1)}% (${fe(pl)})`;
+  }).join('\n');
+
+  // Performances depuis snapshots
+  const snapsClean=[...S.snaps].filter(s=>s.total_value>0).sort((a,b)=>a.date<b.date?-1:1);
+  const medArr=snapsClean.map(s=>s.total_value).sort((a,b)=>a-b);
+  const med=medArr[Math.floor(medArr.length/2)]||0;
+  const snapsF=med>0?snapsClean.filter(s=>s.total_value>=med*0.4&&s.total_value<=med*2.5):snapsClean;
+  const snapRef=(d)=>[...snapsF].filter(s=>s.date<=d).slice(-1)[0]||null;
+  const perfStr=(d,label)=>{const s=snapRef(d);return s&&s.total_value>0?`${label}: ${((T-s.total_value)/s.total_value*100).toFixed(2)}%`:`${label}: N/A`;};
+  const today=new Date().toISOString().slice(0,10);
+  const soy=new Date().getFullYear()+'-01-01';
+
+  return `Tu es l'Advisor IA personnel de Guedj Alpha Fund, un assistant financier expert et de confiance.
+Tu connais parfaitement le portefeuille de l'utilisateur. Réponds toujours en français, de manière concise, précise et professionnelle.
+Utilise des chiffres concrets tirés des données ci-dessous. N'invente rien.
+
+=== SNAPSHOT PORTEFEUILLE (${new Date().toLocaleDateString('fr-FR')}) ===
+Patrimoine total : ${fe(T)}
+Coût total : ${fe(cost)}
+Gain latent : ${fe(gain)} (${gainPct>=0?'+':''}${gainPct.toFixed(2)}%)
+
+Allocation par type : ${allocStr}
+
+BTC live : ${S.btc>0?f(S.btc,0)+'€ (var. 24h: '+(S.btcC||0).toFixed(2)+'%)':'non chargé'}
+ETH live : ${S.eth>0?f(S.eth,0)+'€':'non chargé'}
+CAC 40 : ${S.cac>0?f(S.cac,0)+' (var: '+(S.cacC||0).toFixed(2)+'%)':'non chargé'}
+S&P 500 : ${S.sp>0?f(S.sp,0)+' (var: '+(S.spC||0).toFixed(2)+'%)':'non chargé'}
+
+Performances :
+${perfStr(new Date(Date.now()-864e5).toISOString().slice(0,10),'Journalier (J-1)')}
+${perfStr(new Date(Date.now()-7*864e5).toISOString().slice(0,10),'Hebdo (7j)')}
+${perfStr(new Date(Date.now()-30*864e5).toISOString().slice(0,10),'Mensuel (30j)')}
+${perfStr(soy,'YTD')}
+
+Positions détaillées :
+${positions}
+
+Dividendes attendus : ${S.divs.filter(d=>!d.paid).length} dividendes non perçus enregistrés.
+Snapshots historiques disponibles : ${snapsF.length} points de données.`;
+}
+
+function renderAdvisor(){
+  document.getElementById('cnt').innerHTML=`
+<div style="display:grid;gap:14px">
+  <div class="card" style="border-color:#F7931A22;background:linear-gradient(135deg,#0f0f0f,#110e08)">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <div style="font-size:22px">✦</div>
+      <div>
+        <div style="font-family:'Playfair Display',serif;font-size:16px;font-weight:700;color:#F7931A">Advisor IA</div>
+        <div style="font-size:9px;color:#555;letter-spacing:0.1em;text-transform:uppercase">Powered by Claude · Votre portefeuille en contexte</div>
+      </div>
+    </div>
+    <div class="ai-context-bar" id="ai-ctx-bar">
+      <div class="ai-ctx-pill">💼 <span>${S.pos.length}</span> positions</div>
+      <div class="ai-ctx-pill">💰 <span>${fe(tot())}</span></div>
+      <div class="ai-ctx-pill">₿ BTC <span>${S.btc>0?f(S.btc,0)+'€':'…'}</span></div>
+      <div class="ai-ctx-pill">📊 CAC40 <span>${S.cac>0?f(S.cac,0):'…'}</span></div>
+    </div>
+  </div>
+
+  <div class="card" style="padding:14px">
+    <div class="ai-chat-wrap">
+      <div class="ai-messages" id="ai-msgs">
+        ${aiHistory.length===0?`
+        <div class="ai-msg">
+          <div class="ai-avatar bot">✦</div>
+          <div class="ai-bubble bot">
+            Bonjour ! Je suis votre Advisor IA, j'ai accès en temps réel à l'intégralité de votre portefeuille Guedj Alpha Fund.<br><br>
+            Je peux analyser vos <strong>performances</strong>, votre <strong>allocation</strong>, vos <strong>risques de concentration</strong>, simuler des <strong>scénarios de marché</strong>, ou répondre à toute question sur votre patrimoine.<br><br>
+            Par quoi commençons-nous ?
+          </div>
+        </div>`:''}
+        ${aiHistory.map(m=>`
+        <div class="ai-msg ${m.role}">
+          <div class="ai-avatar ${m.role==='assistant'?'bot':'user'}">${m.role==='assistant'?'✦':'👤'}</div>
+          <div class="ai-bubble ${m.role==='assistant'?'bot':'user'}">${formatAIMessage(m.content)}</div>
+        </div>`).join('')}
+      </div>
+
+      <div class="ai-suggestions" id="ai-suggs" style="${aiHistory.length>0?'display:none':''}">
+        ${['📊 Analyse mon allocation actuelle','⚠️ Quels sont mes principaux risques ?','₿ Comment se porte mon exposition crypto ?','🎯 Suis-je bien diversifié ?','📈 Quel est mon bilan YTD ?','💡 Que me conseilles-tu ce mois-ci ?'].map(s=>`<button class="ai-sugg" onclick="sendAI('${s}')">${s}</button>`).join('')}
+      </div>
+
+      <div class="ai-input-row">
+        <textarea class="ai-input" id="ai-in" placeholder="Posez votre question sur votre portefeuille…" rows="2"
+          onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendAIFromInput()}"></textarea>
+        <button class="ai-send" id="ai-btn" onclick="sendAIFromInput()">➤</button>
+      </div>
+      <div style="font-size:8px;color:#2a2a2a;margin-top:6px;text-align:center">Shift+Entrée pour nouvelle ligne · Les données sont transmises à l'API Claude</div>
+    </div>
+  </div>
+</div>`;
+
+  scrollAIChat();
+}
+
+function formatAIMessage(text){
+  return text
+    .replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g,'<em>$1</em>')
+    .replace(/^### (.*?)$/gm,'<div style="font-size:11px;color:#F7931A;font-weight:700;margin:10px 0 4px">$1</div>')
+    .replace(/^## (.*?)$/gm,'<div style="font-size:12px;color:#F7931A;font-weight:700;margin:10px 0 5px">$1</div>')
+    .replace(/^- (.*?)$/gm,'<div style="padding-left:12px;margin:2px 0">· $1</div>')
+    .replace(/\n\n/g,'<br><br>')
+    .replace(/\n/g,'<br>');
+}
+
+function scrollAIChat(){
+  requestAnimationFrame(()=>{
+    const msgs=document.getElementById('ai-msgs');
+    if(msgs)msgs.scrollTop=msgs.scrollHeight;
+  });
+}
+
+function sendAIFromInput(){
+  const el=document.getElementById('ai-in');
+  if(!el)return;
+  const txt=el.value.trim();
+  if(!txt)return;
+  el.value='';
+  sendAI(txt);
+}
+
+async function sendAI(userMsg){
+  // Masquer suggestions
+  const suggsEl=document.getElementById('ai-suggs');
+  if(suggsEl)suggsEl.style.display='none';
+
+  // Ajouter message user à l'historique
+  aiHistory.push({role:'user',content:userMsg});
+
+  // Afficher immédiatement le message user
+  const msgsEl=document.getElementById('ai-msgs');
+  if(msgsEl){
+    msgsEl.innerHTML+=`
+    <div class="ai-msg user">
+      <div class="ai-avatar user">👤</div>
+      <div class="ai-bubble user">${userMsg.replace(/</g,'&lt;')}</div>
+    </div>
+    <div class="ai-msg" id="ai-typing-indicator">
+      <div class="ai-avatar bot">✦</div>
+      <div class="ai-bubble bot"><div class="ai-typing"><div class="ai-dot"></div><div class="ai-dot"></div><div class="ai-dot"></div></div></div>
+    </div>`;
+    scrollAIChat();
+  }
+
+  // Désactiver le bouton
+  const btn=document.getElementById('ai-btn');
+  if(btn)btn.disabled=true;
+
+  try{
+    const systemPrompt=buildPortfolioContext();
+
+    // Construire les messages (system + historique)
+    const messages=aiHistory.map(m=>({role:m.role,content:m.content}));
+
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'x-api-key':CLAUDE_KEY,
+        'anthropic-version':'2023-06-01',
+        'anthropic-dangerous-direct-browser-iab':'true'
+      },
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1000,
+        system:systemPrompt,
+        messages:messages
+      })
+    });
+
+    const data=await resp.json();
+    const reply=data?.content?.[0]?.text||'Désolé, je n\'ai pas pu traiter votre demande.';
+
+    // Ajouter réponse à l'historique
+    aiHistory.push({role:'assistant',content:reply});
+
+    // Remplacer indicateur de frappe par la vraie réponse
+    const typingEl=document.getElementById('ai-typing-indicator');
+    if(typingEl){
+      typingEl.outerHTML=`
+      <div class="ai-msg" style="animation:fadeInUp 0.3s ease">
+        <div class="ai-avatar bot">✦</div>
+        <div class="ai-bubble bot">${formatAIMessage(reply)}</div>
+      </div>`;
+    }
+
+  }catch(err){
+    const typingEl=document.getElementById('ai-typing-indicator');
+    if(typingEl)typingEl.outerHTML=`
+    <div class="ai-msg">
+      <div class="ai-avatar bot">✦</div>
+      <div class="ai-bubble bot" style="color:#FF3B5C">Erreur de connexion à l'API. Vérifiez votre clé API Claude dans le code (variable <strong>CLAUDE_API_KEY</strong>).</div>
+    </div>`;
+  }finally{
+    if(btn)btn.disabled=false;
+    scrollAIChat();
+  }
+}
+
+function clearAIChat(){
+  aiHistory=[];
+  renderAdvisor();
 }
 
 // ── DATA LOADING ──────────────────────────────────────────
