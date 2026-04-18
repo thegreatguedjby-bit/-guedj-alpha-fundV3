@@ -695,10 +695,21 @@ function renderDashboard(){
   const T=tot();
   const cost=S.pos.reduce((s,p)=>s+(p.quantity*(p.avg_cost||0)),0);
   const gain=T-cost, gainPct=cost>0?gain/cost*100:0;
-  const snaps=[...S.snaps].sort((a,b)=>a.date>b.date?1:-1);
-  const y=snaps[snaps.length-2];
-  const mo=snaps.find(s=>s.date<=new Date(Date.now()-30*864e5).toISOString().slice(0,10));
-  const yr=snaps[0];
+  // Snapshots triés du plus ancien au plus récent (ordre stable)
+  const snaps=[...S.snaps].filter(s=>s.total_value>0).sort((a,b)=>a.date<b.date?-1:1);
+  const today=new Date().toISOString().slice(0,10);
+
+  // Variation journalière : snapshot d'hier (avant aujourd'hui)
+  const y=snaps.filter(s=>s.date<today).slice(-1)[0]||null;
+
+  // Performance mensuelle : snapshot le plus proche de J-30
+  const d30=new Date(Date.now()-30*864e5).toISOString().slice(0,10);
+  const mo=[...snaps].filter(s=>s.date<=d30).slice(-1)[0]||null;
+
+  // Performance annuelle : premier snapshot de l'année en cours
+  const startOfYear=new Date().getFullYear()+'-01-01';
+  const yr=snaps.find(s=>s.date>=startOfYear)||snaps[0]||null;
+
   const dP=y&&y.total_value>0?(T-y.total_value)/y.total_value*100:0;
   const mP=mo&&mo.total_value>0?(T-mo.total_value)/mo.total_value*100:0;
   const aP=yr&&yr.total_value>0?(T-yr.total_value)/yr.total_value*100:0;
@@ -765,11 +776,11 @@ function renderDashboard(){
   <!-- STAT CARDS -->
   <div class="g4">
     <div class="stat-card">
-      <div class="stat-card-label">Mensuel</div>
+      <div class="stat-card-label">Mensuel (30j)</div>
       <div class="stat-card-val">${pc(mP,22)}</div>
     </div>
     <div class="stat-card">
-      <div class="stat-card-label">Annuel</div>
+      <div class="stat-card-label">YTD (1er janv.)</div>
       <div class="stat-card-val">${pc(aP,22)}</div>
     </div>
     <div class="stat-card">
@@ -840,11 +851,15 @@ function renderDashboard(){
 
   requestAnimationFrame(()=>{
     const ctx=document.getElementById('sc');
-    const snaps2=[...S.snaps].sort((a,b)=>a.date>b.date?1:-1);
-    if(ctx&&snaps2.length>1){
+    const snaps2=[...S.snaps].filter(s=>s.total_value>0).sort((a,b)=>a.date<b.date?-1:1);
+    // Filtre anti-pics aberrants : exclure les valeurs qui s'écartent de >60% de la médiane
+    const vals2=snaps2.map(s=>s.total_value).sort((a,b)=>a-b);
+    const median=vals2[Math.floor(vals2.length/2)]||0;
+    const filtered2=median>0?snaps2.filter(s=>s.total_value>=median*0.4&&s.total_value<=median*2.5):snaps2;
+    if(ctx&&filtered2.length>1){
       new Chart(ctx,{type:'line',data:{
-        labels:snaps2.map(s=>new Date(s.date).toLocaleDateString('fr-FR',{month:'short',day:'numeric'})),
-        datasets:[{data:snaps2.map(s=>s.total_value),borderColor:'#F7931A',backgroundColor:'rgba(247,147,26,0.06)',fill:true,tension:0.3,pointRadius:0,borderWidth:1.5}]
+        labels:filtered2.map(s=>new Date(s.date).toLocaleDateString('fr-FR',{month:'short',day:'numeric'})),
+        datasets:[{data:filtered2.map(s=>s.total_value),borderColor:'#F7931A',backgroundColor:'rgba(247,147,26,0.06)',fill:true,tension:0.3,pointRadius:0,borderWidth:1.5}]
       },options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{color:'rgba(255,255,255,0.02)'},ticks:{color:'#555',font:{size:9},maxTicksLimit:6}},y:{grid:{color:'rgba(255,255,255,0.02)'},ticks:{color:'#555',font:{size:9},callback:v=>(v/1000).toFixed(0)+'k€'}}}}});
     }
     const svg=document.getElementById('donut');
@@ -1088,6 +1103,35 @@ let perfSort='abs'; // 'abs' | 'best' | 'worst' | 'eur'
 
 function renderPerformance(){
   const T=tot(),cost=S.pos.reduce((s,p)=>s+(p.quantity*(p.avg_cost||0)),0),gain=T-cost,gPct=cost>0?gain/cost*100:0;
+
+  // ── Calcul des performances temporelles depuis snapshots ──
+  const snapsClean=[...S.snaps].filter(s=>s.total_value>0).sort((a,b)=>a.date<b.date?-1:1);
+  const medArr=snapsClean.map(s=>s.total_value).sort((a,b)=>a-b);
+  const median=medArr[Math.floor(medArr.length/2)]||0;
+  const snapsF=median>0?snapsClean.filter(s=>s.total_value>=median*0.4&&s.total_value<=median*2.5):snapsClean;
+  const today=new Date().toISOString().slice(0,10);
+  const startOfYear=new Date().getFullYear()+'-01-01';
+  const d1=new Date(Date.now()-1*864e5).toISOString().slice(0,10);
+  const d7=new Date(Date.now()-7*864e5).toISOString().slice(0,10);
+  const d30=new Date(Date.now()-30*864e5).toISOString().slice(0,10);
+  const snapRef=(dateStr)=>[...snapsF].filter(s=>s.date<=dateStr).slice(-1)[0]||null;
+  const perf=(dateStr)=>{const s=snapRef(dateStr);return s&&s.total_value>0?(T-s.total_value)/s.total_value*100:null;};
+  const perfEur=(dateStr)=>{const s=snapRef(dateStr);return s&&s.total_value>0?T-s.total_value:null;};
+  const pDay=perf(d1), pDayEur=perfEur(d1);
+  const p7d=perf(d7), p7dEur=perfEur(d7);
+  const p30d=perf(d30), p30dEur=perfEur(d30);
+  const pYtd=perf(startOfYear), pYtdEur=perfEur(startOfYear);
+
+  const perfBlock=(label,pct,eur,accent)=>{
+    const hasData=pct!==null;
+    const col=!hasData?'#333':pct>=0?'#00D4AA':'#FF3B5C';
+    return`<div class="card" style="border-color:${accent||'#1f1f1f'}22">
+      <div class="stat-card-label" style="margin-bottom:6px">${label}</div>
+      <div style="font-size:26px;font-family:'Playfair Display',serif;font-weight:700;color:${col}">${hasData?(pct>=0?'+':'')+pct.toFixed(2)+'%':'N/A'}</div>
+      ${hasData?`<div style="font-size:11px;color:${col};margin-top:3px;opacity:0.7">${eur>=0?'+':''}${fe(eur)}</div>`:''}
+    </div>`;
+  };
+
   const contribs=S.pos.filter(p=>!['cash','epargne'].includes(p.assets?.type)).map(p=>{
     const v=gV(p),c=p.quantity*(p.avg_cost||0),plPct=c>0?(v-c)/c*100:0,plEur=v-c;
     return{ticker:p.assets?.ticker,plPct,plEur,isBtc:p.assets?.ticker==='BTC'};
@@ -1105,6 +1149,18 @@ function renderPerformance(){
 
   document.getElementById('cnt').innerHTML=`
 <div style="display:grid;gap:16px">
+
+  <!-- BLOC PERF TEMPORELLE -->
+  <div>
+    <div class="ct" style="margin-bottom:8px">⏱ Performance par Période</div>
+    <div class="g4">
+      ${perfBlock('Journalier (J-1)',pDay,pDayEur,'#00D4AA')}
+      ${perfBlock('Hebdomadaire (7j)',p7d,p7dEur,'#4A9EFF')}
+      ${perfBlock('Mensuel (30j)',p30d,p30dEur,'#A78BFA')}
+      ${perfBlock('YTD (1er janv.)',pYtd,pYtdEur,'#F7931A')}
+    </div>
+  </div>
+
   <div class="g3">
     <div class="card"><div class="ct">Gain Absolu</div>
       <div style="font-size:26px;font-family:'Playfair Display',serif;font-weight:700;color:${gain>=0?'#00D4AA':'#FF3B5C'}">${gain>=0?'+':''}${fe(gain)}</div>
@@ -1180,32 +1236,53 @@ function renderDividends(){
 
 // ── HISTORY ───────────────────────────────────────────────
 function renderHistory(){
-  const snaps=[...S.snaps].sort((a,b)=>a.date>b.date?1:-1);
+  // Filtrer snapshots valides et trier chronologiquement
+  const snapsRaw=[...S.snaps].filter(s=>s.total_value>0).sort((a,b)=>a.date<b.date?-1:1);
+  // Filtre anti-pics aberrants (médiane ± 60%)
+  const medArr=snapsRaw.map(s=>s.total_value).sort((a,b)=>a-b);
+  const median=medArr[Math.floor(medArr.length/2)]||0;
+  const snaps=median>0?snapsRaw.filter(s=>s.total_value>=median*0.4&&s.total_value<=median*2.5):snapsRaw;
   const vals=snaps.map(s=>s.total_value);
   const T=tot();
+
+  // Références temporelles (sur snapshots filtrés)
+  const today=new Date().toISOString().slice(0,10);
+  const startOfYear=new Date().getFullYear()+'-01-01';
+  const d7=new Date(Date.now()-7*864e5).toISOString().slice(0,10);
+  const d30=new Date(Date.now()-30*864e5).toISOString().slice(0,10);
+  const d90=new Date(Date.now()-90*864e5).toISOString().slice(0,10);
+  const d180=new Date(Date.now()-180*864e5).toISOString().slice(0,10);
+  const d365=new Date(Date.now()-365*864e5).toISOString().slice(0,10);
+
+  const snapBefore=(dateStr)=>[...snaps].filter(s=>s.date<=dateStr).slice(-1)[0]||null;
+  const perfSince=(dateStr)=>{const s=snapBefore(dateStr);return s&&s.total_value>0?(T-s.total_value)/s.total_value*100:null;};
+
+  const ytd=perfSince(startOfYear);
+  const p7=perfSince(d7);
+  const p30=perfSince(d30);
+  const p90=perfSince(d90);
+  const p180=perfSince(d180);
+  const p365=perfSince(d365);
 
   document.getElementById('cnt').innerHTML=`
 <div style="display:grid;gap:16px">
   <div class="card">
-    <div class="ct">Évolution Historique du Patrimoine</div>
+    <div class="ct">Évolution Historique du Patrimoine <span style="color:#444;font-weight:400">(${snaps.length} points · valeurs aberrantes filtrées)</span></div>
     <div style="position:relative;width:100%;height:200px"><canvas id="hc"></canvas></div>
   </div>
   <div class="g2">
     <div class="card"><div class="ct">Statistiques</div>
       ${[
         ['Valeur maximale',fe(Math.max(...vals,0))],
-        ['Valeur minimale',fe(Math.min(...vals,0))],
+        ['Valeur minimale',fe(Math.min(...vals,Infinity))],
         ['Ratio de Sharpe','1.48 (estimé)'],
         ['Max Drawdown','-8.2% (estimé)'],
         ['Volatilité annualisée','12.4% (estimé)'],
-        ['Snapshots enregistrés',snaps.length],
+        ['Snapshots filtrés',snaps.length+' / '+snapsRaw.length],
       ].map(([k,v])=>`<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #111"><span style="font-size:10px;color:#444">${k}</span><span style="font-size:10px;color:#bbb;font-weight:600">${v}</span></div>`).join('')}
     </div>
     <div class="card"><div class="ct">Performance par Période</div>
-      ${[['1 Semaine',7],['1 Mois',30],['3 Mois',90],['6 Mois',180],['1 An',365]].map(([l,d])=>{
-        const dt=new Date();dt.setDate(dt.getDate()-d);const ds=dt.toISOString().slice(0,10);
-        const sn=snaps.find(s=>s.date>=ds);
-        const v=sn&&sn.total_value>0?(T-sn.total_value)/sn.total_value*100:null;
+      ${[['YTD (1er janv.)',ytd],['1 Semaine',p7],['1 Mois',p30],['3 Mois',p90],['6 Mois',p180],['1 An',p365]].map(([l,v])=>{
         return`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #111"><span style="font-size:10px;color:#444">${l}</span>${v!==null?pc(v,11):'<span style="font-size:10px;color:#333">N/A</span>'}</div>`;
       }).join('')}
     </div>
