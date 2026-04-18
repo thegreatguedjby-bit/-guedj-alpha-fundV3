@@ -1643,7 +1643,8 @@ async function sendAI(userMsg){
         'Content-Type':'application/json',
         'x-api-key':CLAUDE_KEY,
         'anthropic-version':'2023-06-01',
-        'anthropic-dangerous-direct-browser-iab':'true'
+        'anthropic-dangerous-direct-browser-iab':'true',
+        'anthropic-beta':'interoperability-2025-01'
       },
       body:JSON.stringify({
         model:'claude-sonnet-4-20250514',
@@ -1654,6 +1655,10 @@ async function sendAI(userMsg){
     });
 
     const data=await resp.json();
+    if(!resp.ok){
+      const errMsg=data?.error?.message||`Erreur HTTP ${resp.status}`;
+      throw new Error(errMsg);
+    }
     const reply=data?.content?.[0]?.text||'Désolé, je n\'ai pas pu traiter votre demande.';
 
     // Ajouter réponse à l'historique
@@ -1670,11 +1675,16 @@ async function sendAI(userMsg){
     }
 
   }catch(err){
+    // Retirer le dernier message user de l'historique si erreur
+    if(aiHistory[aiHistory.length-1]?.role==='user') aiHistory.pop();
     const typingEl=document.getElementById('ai-typing-indicator');
     if(typingEl)typingEl.outerHTML=`
     <div class="ai-msg">
       <div class="ai-avatar bot">✦</div>
-      <div class="ai-bubble bot" style="color:#FF3B5C">Erreur de connexion à l'API. Vérifiez votre clé API Claude dans le code (variable <strong>CLAUDE_API_KEY</strong>).</div>
+      <div class="ai-bubble bot" style="color:#FF3B5C">
+        <strong>Erreur API :</strong> ${err.message||'Connexion impossible'}<br><br>
+        <span style="color:#555;font-size:10px">Vérifiez que <strong style="color:#aaa">CLAUDE_KEY</strong> contient bien votre clé <code>sk-ant-...</code> et que votre repo GitHub est privé.</span>
+      </div>
     </div>`;
   }finally{
     if(btn)btn.disabled=false;
