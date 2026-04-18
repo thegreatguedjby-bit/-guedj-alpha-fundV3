@@ -341,6 +341,7 @@
     <button class="tab" onclick="goTab('history',this)">Historique</button>
     <button class="tab" onclick="goTab('advisor',this)" style="color:#F7931A55">✦ Advisor IA</button>
     <button class="tab" onclick="goTab('news',this)" style="color:#4A9EFF55">📰 News IA</button>
+    <button class="tab" onclick="goTab('learn',this)" style="color:#A78BFA55">🎓 Apprentissage</button>
   </div>
 </header>
 
@@ -408,6 +409,9 @@
     </button>
     <button onclick="closeMoreMenu();goTabMobile('import',document.getElementById('bnav-more'))" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:16px 12px;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all 0.15s" ontouchstart="this.style.background='rgba(255,255,255,0.1)'" ontouchend="this.style.background='rgba(255,255,255,0.05)'">
       <span style="font-size:26px">📄</span><span style="font-size:12px;font-weight:600;color:rgba(255,255,255,0.7)">Import PDF</span>
+    </button>
+    <button onclick="closeMoreMenu();goTabMobile('learn',document.getElementById('bnav-more'))" style="background:rgba(167,139,250,0.07);border:1px solid rgba(167,139,250,0.2);border-radius:16px;padding:16px 12px;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all 0.15s" ontouchstart="this.style.background='rgba(167,139,250,0.15)'" ontouchend="this.style.background='rgba(167,139,250,0.07)'">
+      <span style="font-size:26px">🎓</span><span style="font-size:12px;font-weight:600;color:#A78BFA">Apprentissage</span>
     </button>
   </div>
 </div>
@@ -1639,12 +1643,12 @@ function goTab(tab,el){
 }
 function goTabEl(tab){
   S.tab=tab;
-  const tabs=['dashboard','portfolio','import','gestion','performance','dividends','history','advisor','news'];
+  const tabs=['dashboard','portfolio','import','gestion','performance','dividends','history','advisor','news','learn'];
   document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',tabs[i]===tab));
   render();
 }
 function render(){
-  const map={dashboard:renderDashboard,portfolio:renderPortfolio,import:renderImport,gestion:renderGestion,performance:renderPerformance,dividends:renderDividends,history:renderHistory,advisor:renderAdvisor,news:renderNews};
+  const map={dashboard:renderDashboard,portfolio:renderPortfolio,import:renderImport,gestion:renderGestion,performance:renderPerformance,dividends:renderDividends,history:renderHistory,advisor:renderAdvisor,news:renderNews,learn:renderLearn};
   (map[S.tab]||renderDashboard)();
 }
 
@@ -2070,6 +2074,383 @@ async function loadNewsCard(ticker){
 
 function showNewsTicker(ticker){
   loadNewsCard(ticker);
+}
+
+
+// ── APPRENTISSAGE IA ──────────────────────────────────────
+const LEARN_LEVELS={
+  debutant:{label:'Débutant',color:'#00D4AA',icon:'🌱',desc:'Les bases de la finance personnelle'},
+  intermediaire:{label:'Intermédiaire',color:'#4A9EFF',icon:'📈',desc:'Actions, ETFs, diversification'},
+  avance:{label:'Avancé',color:'#A78BFA',icon:'🚀',desc:'Crypto, fiscalité, stratégies avancées'},
+};
+
+const LEARN_THEMES=[
+  {id:'bases',label:'Bases',icon:'📚',topics:['inflation','taux d'intérêt','capitalisation','risque/rendement','liquidité']},
+  {id:'bourse',label:'Bourse',icon:'📊',topics:['actions','ETF','indices','dividendes','PER','bilan comptable']},
+  {id:'crypto',label:'Crypto',icon:'₿',topics:['Bitcoin','blockchain','DeFi','staking','volatilité crypto','ETF Bitcoin']},
+  {id:'fiscalite',label:'Fiscalité',icon:'🏛️',topics:['PEA','CTO','plus-values','flat tax','IFI','optimisation fiscale']},
+  {id:'strategie',label:'Stratégie',icon:'🎯',topics:['allocation d'actifs','DCA','rééquilibrage','horizon de placement','gestion des risques']},
+];
+
+let learnState={
+  level:'debutant',
+  theme:null,
+  session:[],     // [{role, content, isQuestion, isCorrect, points}]
+  score:0,
+  streak:0,
+  totalQuestions:0,
+  correctAnswers:0,
+  phase:'home',   // 'home' | 'chat'
+};
+
+function renderLearn(){
+  if(learnState.phase==='chat'){
+    renderLearnChat();
+    return;
+  }
+  const lvl=LEARN_LEVELS[learnState.level];
+  document.getElementById('cnt').innerHTML=`
+<div style="display:flex;flex-direction:column;gap:14px">
+
+  <!-- Header -->
+  <div style="background:linear-gradient(135deg,rgba(167,139,250,0.1),rgba(167,139,250,0.04));border:1px solid rgba(167,139,250,0.2);border-radius:20px;padding:18px 16px">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+      <div style="width:42px;height:42px;border-radius:14px;background:rgba(167,139,250,0.15);border:1px solid rgba(167,139,250,0.25);display:flex;align-items:center;justify-content:center;font-size:20px">🎓</div>
+      <div>
+        <div style="font-size:17px;font-weight:800;color:#fff">Finance Academy</div>
+        <div style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:1px">Apprenez la finance avec un coach IA personnel</div>
+      </div>
+    </div>
+    <!-- Stats -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+      <div style="background:rgba(255,255,255,0.05);border-radius:12px;padding:10px;text-align:center">
+        <div style="font-size:20px;font-weight:800;color:#A78BFA">${learnState.score}</div>
+        <div style="font-size:9px;color:rgba(255,255,255,0.3);margin-top:2px">Points</div>
+      </div>
+      <div style="background:rgba(255,255,255,0.05);border-radius:12px;padding:10px;text-align:center">
+        <div style="font-size:20px;font-weight:800;color:#F7931A">${learnState.streak}🔥</div>
+        <div style="font-size:9px;color:rgba(255,255,255,0.3);margin-top:2px">Série</div>
+      </div>
+      <div style="background:rgba(255,255,255,0.05);border-radius:12px;padding:10px;text-align:center">
+        <div style="font-size:20px;font-weight:800;color:#00D4AA">${learnState.totalQuestions>0?Math.round(learnState.correctAnswers/learnState.totalQuestions*100):0}%</div>
+        <div style="font-size:9px;color:rgba(255,255,255,0.3);margin-top:2px">Réussite</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Niveau -->
+  <div>
+    <div style="font-size:10px;font-weight:600;color:rgba(255,255,255,0.35);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:10px">Votre niveau</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+      ${Object.entries(LEARN_LEVELS).map(([key,l])=>`
+      <button onclick="learnState.level='${key}';renderLearn()" style="
+        background:${learnState.level===key?'rgba(167,139,250,0.15)':'rgba(255,255,255,0.04)'};
+        border:1.5px solid ${learnState.level===key?'rgba(167,139,250,0.4)':'rgba(255,255,255,0.08)'};
+        border-radius:14px;padding:12px 8px;cursor:pointer;-webkit-tap-highlight-color:transparent;
+        transition:all 0.15s;text-align:center">
+        <div style="font-size:22px;margin-bottom:5px">${l.icon}</div>
+        <div style="font-size:11px;font-weight:700;color:${learnState.level===key?'#A78BFA':'rgba(255,255,255,0.5)'}">${l.label}</div>
+      </button>`).join('')}
+    </div>
+  </div>
+
+  <!-- Thèmes -->
+  <div>
+    <div style="font-size:10px;font-weight:600;color:rgba(255,255,255,0.35);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:10px">Choisir un thème</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      ${LEARN_THEMES.map(t=>`
+      <button onclick="startLearnSession('${t.id}')" style="
+        background:rgba(255,255,255,0.04);
+        border:1px solid rgba(255,255,255,0.08);
+        border-radius:16px;padding:16px 14px;cursor:pointer;
+        -webkit-tap-highlight-color:transparent;transition:all 0.15s;
+        text-align:left;display:flex;align-items:center;gap:12px"
+        ontouchstart="this.style.background='rgba(167,139,250,0.1)';this.style.borderColor='rgba(167,139,250,0.25)'"
+        ontouchend="this.style.background='rgba(255,255,255,0.04)';this.style.borderColor='rgba(255,255,255,0.08)'">
+        <span style="font-size:26px">${t.icon}</span>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:#fff">${t.label}</div>
+          <div style="font-size:9px;color:rgba(255,255,255,0.3);margin-top:2px">${t.topics.slice(0,2).join(' · ')}</div>
+        </div>
+      </button>`).join('')}
+
+      <!-- Mode libre -->
+      <button onclick="startLearnSession('libre')" style="
+        background:rgba(247,147,26,0.06);
+        border:1px solid rgba(247,147,26,0.15);
+        border-radius:16px;padding:16px 14px;cursor:pointer;
+        -webkit-tap-highlight-color:transparent;transition:all 0.15s;
+        text-align:left;display:flex;align-items:center;gap:12px;grid-column:span 2"
+        ontouchstart="this.style.background='rgba(247,147,26,0.12)'"
+        ontouchend="this.style.background='rgba(247,147,26,0.06)'">
+        <span style="font-size:26px">💬</span>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:#F7931A">Mode libre</div>
+          <div style="font-size:9px;color:rgba(255,255,255,0.3);margin-top:2px">Posez n'importe quelle question financière</div>
+        </div>
+      </button>
+    </div>
+  </div>
+</div>`;
+}
+
+async function startLearnSession(themeId){
+  learnState.theme=themeId;
+  learnState.session=[];
+  learnState.phase='chat';
+
+  const theme=LEARN_THEMES.find(t=>t.id===themeId);
+  const lvl=LEARN_LEVELS[learnState.level];
+  const portfolio=S.pos.filter(p=>p.assets?.type!=='cash').map(p=>p.assets?.ticker).filter(Boolean).join(', ')||'Bitcoin, ETF CW8';
+
+  // Prompt système
+  const systemPrompt=`Tu es un coach financier pédagogue et bienveillant. Tu enseignes la finance à quelqu'un qui a un portefeuille réel contenant : ${portfolio}.
+Niveau de l'utilisateur : ${lvl.label}.
+${themeId==='libre'?'Mode libre : réponds à toutes les questions de finance.':'Thème : '+(theme?.label||themeId)+'. Topics possibles : '+(theme?.topics||[]).join(', ')+'.'}
+
+TON RÔLE :
+1. Explique des concepts financiers de façon claire, avec des exemples concrets liés à son portefeuille réel
+2. Pose UNE question à la fin de chaque message pour vérifier la compréhension
+3. Quand l'utilisateur répond, évalue sa réponse (Correct/Presque/Incorrect), explique, puis enseigne quelque chose de nouveau
+4. Adapte la difficulté au niveau ${lvl.label}
+5. Sois encourageant, utilise des emojis avec modération
+6. Maximum 150 mots par réponse, sois concis
+
+FORMAT DE RÉPONSE :
+- Explication courte (2-3 phrases)
+- Exemple concret lié à son portefeuille si possible
+- Question claire à la fin (précédée de "❓")
+
+Commence par te présenter en 2 phrases et pose ta première question sur le thème "${themeId==='libre'?'la finance en général':theme?.label}".`;
+
+  renderLearnChat();
+
+  // Appel initial
+  await learnAICall(systemPrompt,[{role:'user',content:'Commence la session'}],true);
+}
+
+function renderLearnChat(){
+  const theme=LEARN_THEMES.find(t=>t.id===learnState.theme);
+  const lvl=LEARN_LEVELS[learnState.level];
+
+  document.getElementById('cnt').innerHTML=`
+<div style="display:flex;flex-direction:column;height:calc(100dvh - 130px);overflow:hidden;gap:0">
+
+  <!-- Header session -->
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-shrink:0">
+    <button onclick="learnState.phase='home';renderLearn()" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:7px 12px;font-size:12px;color:rgba(255,255,255,0.5);cursor:pointer;font-family:'Inter',sans-serif;-webkit-tap-highlight-color:transparent">← Retour</button>
+    <div style="flex:1;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:7px 12px;display:flex;align-items:center;justify-content:space-between">
+      <span style="font-size:12px;font-weight:600;color:#A78BFA">${theme?.icon||'💬'} ${theme?.label||'Libre'} · ${lvl.label}</span>
+      <span style="font-size:11px;color:#F7931A;font-weight:700">⭐ ${learnState.score} pts</span>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  <div id="learn-msgs" style="flex:1;overflow-y:auto;min-height:0;display:flex;flex-direction:column;gap:12px;padding:0 2px 8px;-webkit-overflow-scrolling:touch">
+    ${learnState.session.length===0?`
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:10px;opacity:0.4">
+      <div style="font-size:36px">🎓</div>
+      <div style="font-size:13px;color:rgba(255,255,255,0.5)">Préparation de votre coach…</div>
+    </div>`:''}
+    ${learnState.session.map(m=>learnMsgHTML(m)).join('')}
+  </div>
+
+  <!-- Input -->
+  <div style="flex-shrink:0;padding-top:10px;border-top:1px solid rgba(255,255,255,0.06)">
+    <!-- Réponses rapides -->
+    <div id="learn-quick" style="display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:8px">
+      ${['Je ne sais pas','Pouvez-vous réexpliquer ?','Donnez-moi un exemple','Question suivante ➜'].map(s=>`
+      <button onclick="sendLearnMsg('${s}')" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:7px 14px;font-size:11px;color:rgba(255,255,255,0.45);cursor:pointer;white-space:nowrap;flex-shrink:0;font-family:'Inter',sans-serif;-webkit-tap-highlight-color:transparent">${s}</button>`).join('')}
+    </div>
+    <div style="display:flex;gap:8px">
+      <textarea id="learn-in" placeholder="Votre réponse…" rows="1"
+        style="flex:1;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:14px;padding:12px 14px;font-size:14px;color:#fff;font-family:'Inter',sans-serif;outline:none;resize:none;line-height:1.4;min-height:44px;max-height:90px;-webkit-appearance:none"
+        oninput="this.style.height='44px';this.style.height=Math.min(this.scrollHeight,90)+'px'"
+        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendLearnMsgFromInput()}"></textarea>
+      <button id="learn-btn" onclick="sendLearnMsgFromInput()" style="background:#A78BFA;border:none;border-radius:14px;padding:12px 16px;cursor:pointer;font-size:16px;height:44px;align-self:flex-end;transition:all 0.15s;-webkit-tap-highlight-color:transparent">➤</button>
+    </div>
+  </div>
+</div>`;
+
+  scrollLearnChat();
+}
+
+function learnMsgHTML(m){
+  const isBot=m.role==='assistant';
+  if(isBot){
+    // Highlight la question finale
+    const formatted=formatLearnMessage(m.content);
+    return`<div style="display:flex;gap:10px;align-items:flex-start;animation:fadeUp 0.2s ease">
+      <div style="width:30px;height:30px;border-radius:50%;background:rgba(167,139,250,0.15);border:1px solid rgba(167,139,250,0.25);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">🎓</div>
+      <div style="max-width:88%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:4px 18px 18px 18px;padding:13px 15px;font-size:13px;line-height:1.65;color:rgba(255,255,255,0.88)">${formatted}</div>
+    </div>`;
+  }
+  // User message + feedback badge
+  const feedbackBadge=m.feedback?`<div style="font-size:10px;font-weight:700;color:${m.feedback==='correct'?'#00D4AA':m.feedback==='presque'?'#F7931A':'#FF4D6A'};margin-bottom:4px">${m.feedback==='correct'?'✓ Correct +'+m.points+'pts':m.feedback==='presque'?'~ Presque':'✗ Incorrect'}</div>`:'';
+  return`<div style="display:flex;flex-direction:row-reverse;gap:10px;align-items:flex-start;animation:fadeUp 0.2s ease">
+    <div style="width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">👤</div>
+    <div style="max-width:88%;text-align:right">
+      ${feedbackBadge}
+      <div style="background:rgba(167,139,250,0.12);border:1px solid rgba(167,139,250,0.2);border-radius:18px 4px 18px 18px;padding:12px 15px;font-size:13px;line-height:1.65;color:#D4BBFF;display:inline-block;text-align:left">${m.content}</div>
+    </div>
+  </div>`;
+}
+
+function formatLearnMessage(text){
+  return text
+    .replace(/\*\*(.*?)\*\*/g,'<strong style="color:#A78BFA">$1</strong>')
+    .replace(/\*(.*?)\*/g,'<em style="color:#00D4AA;font-style:normal;font-weight:600">$1</em>')
+    .replace(/❓(.*?)$/gm,'<div style="margin-top:10px;padding:10px 12px;background:rgba(167,139,250,0.08);border:1px solid rgba(167,139,250,0.2);border-radius:10px;font-size:12px;color:#C4A8FF;font-weight:600">❓$1</div>')
+    .replace(/
+
+/g,'<br><br>').replace(/
+/g,'<br>');
+}
+
+function scrollLearnChat(){
+  requestAnimationFrame(()=>{
+    const el=document.getElementById('learn-msgs');
+    if(el)el.scrollTop=el.scrollHeight;
+  });
+}
+
+function sendLearnMsgFromInput(){
+  const el=document.getElementById('learn-in');
+  if(!el)return;
+  const txt=el.value.trim();
+  if(!txt)return;
+  el.value='';
+  el.style.height='44px';
+  sendLearnMsg(txt);
+}
+
+async function sendLearnMsg(userMsg){
+  learnState.session.push({role:'user',content:userMsg});
+
+  // Add typing indicator
+  const typingId='learn-typing-'+Date.now();
+  const msgsEl=document.getElementById('learn-msgs');
+  if(msgsEl){
+    msgsEl.innerHTML+=`
+    <div id="${typingId}" style="display:flex;gap:10px;align-items:flex-start">
+      <div style="width:30px;height:30px;border-radius:50%;background:rgba(167,139,250,0.15);border:1px solid rgba(167,139,250,0.25);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">🎓</div>
+      <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:4px 18px 18px 18px;padding:13px 15px">
+        <div style="display:flex;gap:4px;align-items:center"><div class="ai-dot"></div><div class="ai-dot"></div><div class="ai-dot"></div></div>
+      </div>
+    </div>`;
+    // Also add user msg render
+    const userEl=document.createElement('div');
+    userEl.innerHTML=learnMsgHTML({role:'user',content:userMsg});
+    msgsEl.insertBefore(userEl.firstElementChild, document.getElementById(typingId));
+    scrollLearnChat();
+  }
+
+  const btn=document.getElementById('learn-btn');
+  if(btn)btn.disabled=true;
+
+  const theme=LEARN_THEMES.find(t=>t.id===learnState.theme);
+  const lvl=LEARN_LEVELS[learnState.level];
+  const portfolio=S.pos.filter(p=>p.assets?.type!=='cash').map(p=>p.assets?.ticker).filter(Boolean).join(', ')||'Bitcoin, ETF CW8';
+
+  const systemPrompt=`Tu es un coach financier pédagogue. Niveau : ${lvl.label}. Portefeuille de l'utilisateur : ${portfolio}.
+${learnState.theme==='libre'?'Mode libre.':'Thème : '+(theme?.label||'Finance')+'.'}
+Réponds en max 150 mots. Évalue la réponse (si c'est une réponse à une question), explique, puis pose UNE nouvelle question précédée de "❓".
+Format : evaluation courte > explication > ❓ question. Utilise **gras** pour les termes importants.
+Réponds en JSON : {"reply":"...", "feedback":"correct|presque|incorrect|none", "points":0}
+Points : correct=10, presque=5, incorrect=0, none=0`;
+
+  const messages=learnState.session.map(m=>({role:m.role,content:m.content}));
+
+  try{
+    const resp=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+CLAUDE_KEY},
+      body:JSON.stringify({
+        model:'llama-3.3-70b-versatile',
+        max_tokens:400,
+        temperature:0.6,
+        messages:[{role:'system',content:systemPrompt},...messages]
+      })
+    });
+    const data=await resp.json();
+    let text=data?.choices?.[0]?.message?.content||'{}';
+    text=text.replace(/```json|```/g,'').trim();
+    let parsed={reply:'Désolé, je n\'ai pas pu répondre.',feedback:'none',points:0};
+    try{parsed=JSON.parse(text);}catch(e){parsed.reply=text;}
+
+    // Update score & streak
+    if(parsed.feedback==='correct'){learnState.streak++;learnState.correctAnswers++;learnState.score+=parsed.points||10;}
+    else if(parsed.feedback==='presque'){learnState.streak=Math.max(0,learnState.streak-0);learnState.score+=parsed.points||5;}
+    else if(parsed.feedback==='incorrect'){learnState.streak=0;}
+    if(parsed.feedback!=='none')learnState.totalQuestions++;
+
+    // Update user msg feedback
+    const lastUserIdx=learnState.session.map(m=>m.role).lastIndexOf('user');
+    if(lastUserIdx>=0&&parsed.feedback!=='none'){
+      learnState.session[lastUserIdx].feedback=parsed.feedback;
+      learnState.session[lastUserIdx].points=parsed.points||0;
+    }
+
+    learnState.session.push({role:'assistant',content:parsed.reply});
+
+    // Remove typing indicator and re-render chat
+    const typingEl=document.getElementById(typingId);
+    if(typingEl)typingEl.remove();
+
+    // Append bot message
+    if(msgsEl){
+      // Re-render last user with feedback
+      renderLearnChat();
+    }
+
+  }catch(err){
+    const typingEl=document.getElementById(typingId);
+    if(typingEl)typingEl.outerHTML=`<div style="font-size:12px;color:#FF4D6A;padding:8px">Erreur de connexion. Réessayez.</div>`;
+  }finally{
+    const btn2=document.getElementById('learn-btn');
+    if(btn2)btn2.disabled=false;
+    scrollLearnChat();
+  }
+}
+
+async function learnAICall(systemPrompt,messages,isInit){
+  const btn=document.getElementById('learn-btn');
+  if(btn)btn.disabled=true;
+
+  // Show loading state in messages
+  const msgsEl=document.getElementById('learn-msgs');
+  if(msgsEl){
+    msgsEl.innerHTML=`<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:12px;opacity:0.6">
+      <div class="spin" style="width:24px;height:24px;border-color:rgba(167,139,250,0.2);border-top-color:#A78BFA"></div>
+      <div style="font-size:12px;color:rgba(255,255,255,0.4)">Votre coach se prépare…</div>
+    </div>`;
+  }
+
+  try{
+    const resp=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+CLAUDE_KEY},
+      body:JSON.stringify({
+        model:'llama-3.3-70b-versatile',
+        max_tokens:400,
+        temperature:0.6,
+        messages:[{role:'system',content:systemPrompt},...messages]
+      })
+    });
+    const data=await resp.json();
+    let text=data?.choices?.[0]?.message?.content||'{}';
+    text=text.replace(/```json|```/g,'').trim();
+    let parsed={reply:'Bonjour ! Je suis votre coach financier. Commençons !',feedback:'none',points:0};
+    try{parsed=JSON.parse(text);}catch(e){parsed.reply=text;}
+
+    learnState.session.push({role:'assistant',content:parsed.reply});
+    renderLearnChat();
+  }catch(err){
+    if(msgsEl)msgsEl.innerHTML=`<div style="text-align:center;color:#FF4D6A;padding:20px;font-size:13px">Erreur de connexion API.</div>`;
+  }finally{
+    const btn2=document.getElementById('learn-btn');
+    if(btn2)btn2.disabled=false;
+  }
 }
 
 (async()=>{
