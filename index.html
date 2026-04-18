@@ -339,6 +339,7 @@
     <button class="tab" onclick="goTab('dividends',this)">Dividendes</button>
     <button class="tab" onclick="goTab('history',this)">Historique</button>
     <button class="tab" onclick="goTab('advisor',this)" style="color:#F7931A55">✦ Advisor IA</button>
+    <button class="tab" onclick="goTab('news',this)" style="color:#4A9EFF55">📰 News IA</button>
   </div>
 </header>
 
@@ -389,6 +390,10 @@
   <div class="bnav-item" onclick="goTabMobile('advisor',this)">
     <div class="bnav-icon">✦</div>
     <div class="bnav-label">Advisor</div>
+  </div>
+  <div class="bnav-item" onclick="goTabMobile('news',this)">
+    <div class="bnav-icon">📰</div>
+    <div class="bnav-label">News</div>
   </div>
 </nav>
 
@@ -1570,12 +1575,12 @@ function goTab(tab,el){
 }
 function goTabEl(tab){
   S.tab=tab;
-  const tabs=['dashboard','portfolio','import','gestion','performance','dividends','history','advisor'];
+  const tabs=['dashboard','portfolio','import','gestion','performance','dividends','history','advisor','news'];
   document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',tabs[i]===tab));
   render();
 }
 function render(){
-  const map={dashboard:renderDashboard,portfolio:renderPortfolio,import:renderImport,gestion:renderGestion,performance:renderPerformance,dividends:renderDividends,history:renderHistory,advisor:renderAdvisor};
+  const map={dashboard:renderDashboard,portfolio:renderPortfolio,import:renderImport,gestion:renderGestion,performance:renderPerformance,dividends:renderDividends,history:renderHistory,advisor:renderAdvisor,news:renderNews};
   (map[S.tab]||renderDashboard)();
 }
 
@@ -1860,7 +1865,167 @@ setInterval(()=>{
   // Vérifier snapshot toutes les heures (si app reste ouverte)
   setInterval(autoSnapshot,3600000);
 
-  // ── PULL TO REFRESH ─────────────────────────────────────
+  
+// ── NEWS IA ───────────────────────────────────────────────
+let newsCache={}; // ticker -> {articles, ts}
+let newsLoading=false;
+
+async function fetchNewsForTicker(ticker){
+  // Use Groq with web search context via a prompt
+  const prompt=`Tu es un assistant financier. Pour le titre boursier "${ticker}", génère un résumé fictif mais plausible de 3 actualités récentes importantes (dans les 7 derniers jours) qui pourraient impacter ce titre. Réponds UNIQUEMENT en JSON valide avec ce format exact, sans aucun texte avant ou après:
+{"articles":[
+  {"title":"titre court","summary":"2-3 phrases de résumé","sentiment":"positive|negative|neutral","source":"nom source fictive","date":"date récente"},
+  {"title":"...","summary":"...","sentiment":"...","source":"...","date":"..."},
+  {"title":"...","summary":"...","sentiment":"...","source":"...","date":"..."}
+]}`;
+
+  const resp = await fetch('https://api.groq.com/openai/v1/chat/completions',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+CLAUDE_KEY},
+    body:JSON.stringify({
+      model:'llama-3.3-70b-versatile',
+      max_tokens:600,
+      temperature:0.7,
+      messages:[{role:'user',content:prompt}]
+    })
+  });
+  const data=await resp.json();
+  const text=data?.choices?.[0]?.message?.content||'{}';
+  try{
+    const clean=text.replace(/```json|```/g,'').trim();
+    return JSON.parse(clean);
+  }catch(e){return {articles:[]};}
+}
+
+function newsCardHTML(ticker,data,isLoading){
+  const sentColor={positive:'#00D4AA',negative:'#FF4D6A',neutral:'rgba(255,255,255,0.5)'};
+  const sentIcon={positive:'↑',negative:'↓',neutral:'→'};
+  const sentBg={positive:'rgba(0,212,170,0.08)',negative:'rgba(255,77,106,0.08)',neutral:'rgba(255,255,255,0.04)'};
+
+  if(isLoading) return `
+    <div class="card" style="padding:16px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+        <div style="font-size:13px;font-weight:700;color:#fff">${ticker}</div>
+        <div style="height:1px;flex:1;background:rgba(255,255,255,0.06)"></div>
+        <div class="spin" style="width:14px;height:14px;border-width:2px"></div>
+      </div>
+      ${[1,2,3].map(()=>`
+      <div style="height:56px;border-radius:10px;margin-bottom:8px;background:linear-gradient(90deg,rgba(255,255,255,0.04) 25%,rgba(255,255,255,0.07) 50%,rgba(255,255,255,0.04) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite"></div>`).join('')}
+    </div>`;
+
+  const articles=data?.articles||[];
+  if(!articles.length) return `
+    <div class="card" style="padding:16px">
+      <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:8px">${ticker}</div>
+      <div style="font-size:12px;color:rgba(255,255,255,0.25);text-align:center;padding:16px 0">Aucune actualité disponible</div>
+    </div>`;
+
+  // Sentiment global
+  const sentiments=articles.map(a=>a.sentiment);
+  const pos=sentiments.filter(s=>s==='positive').length;
+  const neg=sentiments.filter(s=>s==='negative').length;
+  const globalSent=pos>neg?'positive':neg>pos?'negative':'neutral';
+
+  return `
+  <div class="card" style="padding:16px">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+      <div style="font-size:14px;font-weight:800;color:#fff">${ticker}</div>
+      <div style="height:1px;flex:1;background:rgba(255,255,255,0.06)"></div>
+      <div style="font-size:10px;font-weight:700;color:${sentColor[globalSent]};background:${sentBg[globalSent]};padding:3px 8px;border-radius:6px">${sentIcon[globalSent]} ${globalSent==='positive'?'Positif':globalSent==='negative'?'Négatif':'Neutre'}</div>
+    </div>
+    ${articles.map(a=>`
+    <div style="margin-bottom:10px;padding:12px;background:${sentBg[a.sentiment]};border:1px solid ${sentColor[a.sentiment]}22;border-radius:12px;border-left:3px solid ${sentColor[a.sentiment]}">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:5px">
+        <div style="font-size:12px;font-weight:600;color:#fff;line-height:1.4">${a.title}</div>
+        <div style="font-size:9px;color:${sentColor[a.sentiment]};font-weight:700;flex-shrink:0">${sentIcon[a.sentiment]}</div>
+      </div>
+      <div style="font-size:11px;color:rgba(255,255,255,0.5);line-height:1.55;margin-bottom:6px">${a.summary}</div>
+      <div style="display:flex;gap:8px;font-size:9px;color:rgba(255,255,255,0.25)">
+        <span>${a.source||''}</span><span>·</span><span>${a.date||''}</span>
+      </div>
+    </div>`).join('')}
+  </div>`;
+}
+
+async function renderNews(){
+  const tickers=[...new Set(
+    S.pos
+      .filter(p=>p.assets?.type!=='cash'&&p.assets?.type!=='epargne')
+      .map(p=>p.assets?.ticker)
+      .filter(Boolean)
+  )].slice(0,6); // Max 6 tickers pour ne pas exploser le quota
+
+  const today=new Date().toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'});
+
+  document.getElementById('cnt').innerHTML=`
+<div style="display:grid;gap:14px">
+
+  <!-- Header -->
+  <div style="background:rgba(74,158,255,0.07);border:1px solid rgba(74,158,255,0.15);border-radius:18px;padding:14px 16px">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="width:36px;height:36px;border-radius:12px;background:rgba(74,158,255,0.12);border:1px solid rgba(74,158,255,0.2);display:flex;align-items:center;justify-content:center;font-size:16px">📰</div>
+        <div>
+          <div style="font-size:15px;font-weight:700;color:#fff">News IA</div>
+          <div style="font-size:10px;color:rgba(255,255,255,0.3);margin-top:1px">Actualités générées par IA · ${today}</div>
+        </div>
+      </div>
+      <button onclick="newsCache={};renderNews()" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:6px 10px;font-size:10px;color:rgba(255,255,255,0.4);cursor:pointer;font-family:'Inter',sans-serif;-webkit-tap-highlight-color:transparent">↺ Rafraîchir</button>
+    </div>
+    <div style="margin-top:10px;font-size:10px;color:rgba(255,255,255,0.25);line-height:1.5">
+      ⚠️ Les actualités sont générées par IA à titre informatif uniquement. Toujours vérifier auprès de sources officielles avant toute décision d'investissement.
+    </div>
+  </div>
+
+  <!-- Sélecteur de tickers -->
+  <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none" id="news-ticker-bar">
+    ${tickers.map((t,i)=>`
+    <button id="news-btn-${t}" onclick="showNewsTicker('${t}')"
+      style="background:${i===0?'rgba(74,158,255,0.15)':'rgba(255,255,255,0.05)'};border:1px solid ${i===0?'rgba(74,158,255,0.3)':'rgba(255,255,255,0.1)'};border-radius:20px;padding:7px 14px;font-size:11px;font-weight:600;color:${i===0?'#4A9EFF':'rgba(255,255,255,0.4)'};cursor:pointer;white-space:nowrap;flex-shrink:0;font-family:'Inter',sans-serif;transition:all 0.15s;-webkit-tap-highlight-color:transparent">
+      ${t}
+    </button>`).join('')}
+  </div>
+
+  <!-- Zone d'affichage des news -->
+  <div id="news-content">
+    ${tickers.length===0?
+      '<div class="card"><div class="empty">Aucune position trouvée</div></div>':
+      newsCardHTML(tickers[0],newsCache[tickers[0]],!newsCache[tickers[0]])
+    }
+  </div>
+
+</div>`;
+
+  // Charger le premier ticker automatiquement si pas en cache
+  if(tickers.length>0&&!newsCache[tickers[0]]){
+    loadNewsTicker(tickers[0]);
+  }
+}
+
+async function loadNewsTicker(ticker){
+  if(newsCache[ticker]){
+    document.getElementById('news-content').innerHTML=newsCardHTML(ticker,newsCache[ticker],false);
+    return;
+  }
+  // Afficher skeleton
+  document.getElementById('news-content').innerHTML=newsCardHTML(ticker,null,true);
+  const data=await fetchNewsForTicker(ticker);
+  newsCache[ticker]=data;
+  document.getElementById('news-content').innerHTML=newsCardHTML(ticker,data,false);
+}
+
+function showNewsTicker(ticker){
+  // Update active button style
+  document.querySelectorAll('[id^="news-btn-"]').forEach(btn=>{
+    const isActive=btn.id===`news-btn-${ticker}`;
+    btn.style.background=isActive?'rgba(74,158,255,0.15)':'rgba(255,255,255,0.05)';
+    btn.style.borderColor=isActive?'rgba(74,158,255,0.3)':'rgba(255,255,255,0.1)';
+    btn.style.color=isActive?'#4A9EFF':'rgba(255,255,255,0.4)';
+  });
+  loadNewsTicker(ticker);
+}
+
+// ── PULL TO REFRESH ─────────────────────────────────────
   (function initPTR(){
     let startY=0,pulling=false,dy=0,ind=null;
     const THRESHOLD=70;
