@@ -1041,6 +1041,8 @@ async function doImport(){
 }
 
 // ── GESTION ───────────────────────────────────────────────
+let editingPosId=null; // id de la position en cours d'édition
+
 function renderGestion(){
   document.getElementById('cnt').innerHTML=`
 <div style="display:grid;gap:16px">
@@ -1060,18 +1062,112 @@ function renderGestion(){
   <div class="card">
     <div class="ct">Toutes les Positions (${S.pos.length})</div>
     <div class="tbl-wrap"><table class="tbl">
-      <thead><tr><th style="text-align:left">Ticker</th><th style="text-align:left">Nom</th><th>Type</th><th>Compte</th><th>Quantité</th><th></th></tr></thead>
-      <tbody>${S.pos.map(p=>`<tr>
-        <td style="text-align:left;font-weight:700;color:${p.assets?.ticker==='BTC'?'#F7931A':'#fff'};font-size:12px">${p.assets?.ticker==='BTC'?'₿ ':''}${p.assets?.ticker||'?'}</td>
-        <td style="text-align:left;color:#444;font-size:10px">${(p.assets?.name||'').slice(0,18)}</td>
-        <td>${tb(p.assets?.type||'other')}</td>
-        <td style="font-size:9px;color:#444">${(p.accounts?.name||'').replace(' Edmond de Rothschild','')}</td>
-        <td style="color:#666">${f(p.quantity,2)}</td>
-        <td><button class="btdel" onclick="delPos('${p.id}')">✕</button></td>
-      </tr>`).join('')}</tbody>
+      <thead><tr>
+        <th style="text-align:left">Ticker</th>
+        <th style="text-align:left">Nom</th>
+        <th>Type</th>
+        <th>Compte</th>
+        <th>Quantité</th>
+        <th>Prix moy.</th>
+        <th></th>
+      </tr></thead>
+      <tbody id="pos-tbody">
+        ${S.pos.map(p=>renderPosRow(p)).join('')}
+      </tbody>
     </table></div>
   </div>
 </div>`;
+}
+
+function renderPosRow(p){
+  const isBtc=p.assets?.ticker==='BTC';
+  const isEditing=editingPosId===p.id;
+
+  if(isEditing){
+    return`<tr id="row-${p.id}" style="background:#141414">
+      <td style="text-align:left;font-weight:700;color:${isBtc?'#F7931A':'#fff'};font-size:12px">${isBtc?'₿ ':''}${p.assets?.ticker||'?'}</td>
+      <td style="text-align:left;color:#444;font-size:10px">${(p.assets?.name||'').slice(0,18)}</td>
+      <td>${tb(p.assets?.type||'other')}</td>
+      <td style="font-size:9px;color:#444">${(p.accounts?.name||'').replace(' Edmond de Rothschild','')}</td>
+      <td>
+        <input id="edit-qty-${p.id}" type="number" step="any"
+          value="${p.quantity}"
+          style="background:#1a1a1a;border:1px solid #F7931A;border-radius:3px;padding:5px 7px;font-size:11px;color:#fff;font-family:'IBM Plex Mono',monospace;width:90px;outline:none"
+          onkeydown="if(event.key==='Enter')savePos('${p.id}');if(event.key==='Escape')cancelEdit()">
+      </td>
+      <td>
+        <input id="edit-cost-${p.id}" type="number" step="any"
+          value="${p.avg_cost||0}"
+          style="background:#1a1a1a;border:1px solid #F7931A;border-radius:3px;padding:5px 7px;font-size:11px;color:#fff;font-family:'IBM Plex Mono',monospace;width:90px;outline:none"
+          onkeydown="if(event.key==='Enter')savePos('${p.id}');if(event.key==='Escape')cancelEdit()">
+      </td>
+      <td>
+        <div style="display:flex;gap:5px">
+          <button onclick="savePos('${p.id}')" style="background:#00D4AA;border:none;border-radius:3px;padding:5px 10px;font-size:9px;font-weight:700;color:#000;cursor:pointer;font-family:'IBM Plex Mono',monospace">✓ OK</button>
+          <button onclick="cancelEdit()" style="background:none;border:1px solid #333;border-radius:3px;padding:5px 8px;font-size:9px;color:#666;cursor:pointer;font-family:'IBM Plex Mono',monospace">✕</button>
+        </div>
+      </td>
+    </tr>`;
+  }
+
+  return`<tr id="row-${p.id}">
+    <td style="text-align:left;font-weight:700;color:${isBtc?'#F7931A':'#fff'};font-size:12px">${isBtc?'₿ ':''}${p.assets?.ticker||'?'}</td>
+    <td style="text-align:left;color:#444;font-size:10px">${(p.assets?.name||'').slice(0,18)}</td>
+    <td>${tb(p.assets?.type||'other')}</td>
+    <td style="font-size:9px;color:#444">${(p.accounts?.name||'').replace(' Edmond de Rothschild','')}</td>
+    <td style="color:#aaa;font-weight:600">${f(p.quantity,p.quantity<10?4:2)}</td>
+    <td style="color:#555">${p.avg_cost>0?f(p.avg_cost,2)+' €':'—'}</td>
+    <td>
+      <div style="display:flex;gap:5px;justify-content:flex-end">
+        <button onclick="startEdit('${p.id}')"
+          style="background:rgba(247,147,26,0.1);border:1px solid rgba(247,147,26,0.25);color:#F7931A;padding:4px 8px;border-radius:3px;font-size:9px;cursor:pointer;font-family:'IBM Plex Mono',monospace">✏️</button>
+        <button class="btdel" onclick="delPos('${p.id}')">✕</button>
+      </div>
+    </td>
+  </tr>`;
+}
+
+function startEdit(id){
+  editingPosId=id;
+  // Remplacer uniquement la ligne concernée sans re-render complet
+  const p=S.pos.find(p=>p.id===id);
+  if(!p)return;
+  const row=document.getElementById('row-'+id);
+  if(row){
+    row.outerHTML=renderPosRow(p);
+    // Focus sur le champ quantité
+    requestAnimationFrame(()=>{
+      const el=document.getElementById('edit-qty-'+id);
+      if(el){el.focus();el.select();}
+    });
+  }
+}
+
+function cancelEdit(){
+  const prevId=editingPosId;
+  editingPosId=null;
+  const p=S.pos.find(p=>p.id===prevId);
+  if(!p)return;
+  const row=document.getElementById('row-'+prevId);
+  if(row)row.outerHTML=renderPosRow(p);
+}
+
+async function savePos(id){
+  const qtyEl=document.getElementById('edit-qty-'+id);
+  const costEl=document.getElementById('edit-cost-'+id);
+  if(!qtyEl||!costEl)return;
+  const qty=parseFloat(qtyEl.value);
+  const cost=parseFloat(costEl.value)||0;
+  if(isNaN(qty)||qty<=0){qtyEl.style.borderColor='#FF3B5C';qtyEl.focus();return;}
+
+  // Feedback visuel
+  const row=document.getElementById('row-'+id);
+  if(row)row.style.opacity='0.5';
+
+  await dbPatch('positions',`?id=eq.${id}`,{quantity:qty,avg_cost:cost});
+  editingPosId=null;
+  await loadData();
+  renderGestion();
 }
 
 async function addPos(){
