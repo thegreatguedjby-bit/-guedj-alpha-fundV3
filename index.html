@@ -286,7 +286,8 @@
 <script>
 const SU='https://oeyesimamupcpppklhxm.supabase.co';
 const SK='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9leWVzaW1hbXVwY3BwcGtsaHhtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNTk2MzgsImV4cCI6MjA4ODgzNTYzOH0.RJxbrHp20ENpmDbjd36ZmwaCvLRGv9Rbpr4ghRlQz6M';
-const CLAUDE_KEY='VOTRE_CLE_API_CLAUDE_ICI'; // 👈 Remplacez par sk-ant-...
+const CLAUDE_KEY='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';
+const CLAUDE_PROXY='https://proud-resonance-75dguedj-proxy2.jsfwpwnbkw.workers.dev';
 const SH={'apikey':SK,'Authorization':'Bearer '+SK,'Content-Type':'application/json'};
 pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
@@ -1637,20 +1638,20 @@ async function sendAI(userMsg){
     // Construire les messages (system + historique)
     const messages=aiHistory.map(m=>({role:m.role,content:m.content}));
 
-    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+    // Groq API — 100% gratuit, pas de proxy nécessaire
+    const resp=await fetch('https://api.groq.com/openai/v1/chat/completions',{
       method:'POST',
       headers:{
         'Content-Type':'application/json',
-        'x-api-key':CLAUDE_KEY,
-        'anthropic-version':'2023-06-01',
-        'anthropic-dangerous-direct-browser-iab':'true',
-        'anthropic-beta':'interoperability-2025-01'
+        'Authorization':'Bearer '+CLAUDE_KEY
       },
       body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',
+        model:'llama-3.3-70b-versatile',
         max_tokens:1000,
-        system:systemPrompt,
-        messages:messages
+        messages:[
+          {role:'system',content:systemPrompt},
+          ...messages
+        ]
       })
     });
 
@@ -1659,7 +1660,7 @@ async function sendAI(userMsg){
       const errMsg=data?.error?.message||`Erreur HTTP ${resp.status}`;
       throw new Error(errMsg);
     }
-    const reply=data?.content?.[0]?.text||'Désolé, je n\'ai pas pu traiter votre demande.';
+    const reply=data?.choices?.[0]?.message?.content||"Désolé, je n'ai pas pu traiter votre demande.";
 
     // Ajouter réponse à l'historique
     aiHistory.push({role:'assistant',content:reply});
