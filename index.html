@@ -322,8 +322,7 @@
 <header class="hd">
   <div class="ht">
     <div class="logo-wrap">
-      <div class="lt">GUEDJ <span>ALPHA</span></div>
-      <div class="ls">Personal Wealth Terminal</div>
+      <div class="lt">GUEDJ <span>ALPHA</span> FUND</div>
     </div>
     <div style="display:flex;align-items:center;gap:10px">
       <span class="htime" id="clk"></span>
@@ -1637,54 +1636,62 @@ Snapshots historiques disponibles : ${snapsF.length} points de données.`;
 
 function renderAdvisor(){
   document.getElementById('cnt').innerHTML=`
-<div style="display:grid;gap:14px">
-  <div class="card" style="border-color:#F7931A22;background:linear-gradient(135deg,#0f0f0f,#110e08)">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
-      <div style="font-size:22px">✦</div>
-      <div>
-        <div style="font-family:'Playfair Display',serif;font-size:16px;font-weight:700;color:#F7931A">Advisor IA</div>
-        <div style="font-size:9px;color:#555;letter-spacing:0.1em;text-transform:uppercase">Powered by Claude · Votre portefeuille en contexte</div>
+<div style="display:flex;flex-direction:column;gap:0;height:calc(100dvh - 130px);overflow:hidden">
+
+  <!-- Header Advisor -->
+  <div style="background:rgba(247,147,26,0.07);border:1px solid rgba(247,147,26,0.15);border-radius:18px;padding:14px 16px;margin-bottom:12px;flex-shrink:0">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="width:36px;height:36px;border-radius:12px;background:rgba(247,147,26,0.15);border:1px solid rgba(247,147,26,0.25);display:flex;align-items:center;justify-content:center;font-size:16px">✦</div>
+        <div>
+          <div style="font-size:15px;font-weight:700;color:#fff">Advisor IA</div>
+          <div style="font-size:10px;color:rgba(255,255,255,0.3);margin-top:1px">Llama 3.3 · Portefeuille en contexte</div>
+        </div>
       </div>
+      <button onclick="clearAIChat()" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:6px 10px;font-size:10px;color:rgba(255,255,255,0.4);cursor:pointer;font-family:'Inter',sans-serif;-webkit-tap-highlight-color:transparent">Effacer</button>
     </div>
-    <div class="ai-context-bar" id="ai-ctx-bar">
-      <div class="ai-ctx-pill">💼 <span>${S.pos.length}</span> positions</div>
+    <div class="ai-context-bar" style="margin-top:10px;margin-bottom:0">
+      <div class="ai-ctx-pill">💼 <span>${S.pos.length} positions</span></div>
       <div class="ai-ctx-pill">💰 <span>${fe(tot())}</span></div>
-      <div class="ai-ctx-pill">₿ BTC <span>${S.btc>0?f(S.btc,0)+'€':'…'}</span></div>
-      <div class="ai-ctx-pill">📊 CAC40 <span>${S.cac>0?f(S.cac,0):'…'}</span></div>
+      <div class="ai-ctx-pill">₿ <span>${S.btc>0?f(S.btc,0)+'€':'…'}</span></div>
+      <div class="ai-ctx-pill">📊 <span>${S.cac>0?f(S.cac,0):'…'}</span></div>
     </div>
   </div>
 
-  <div class="card" style="padding:14px">
-    <div class="ai-chat-wrap">
-      <div class="ai-messages" id="ai-msgs">
-        ${aiHistory.length===0?`
-        <div class="ai-msg">
-          <div class="ai-avatar bot">✦</div>
-          <div class="ai-bubble bot">
-            Bonjour ! Je suis votre Advisor IA, j'ai accès en temps réel à l'intégralité de votre portefeuille Guedj Alpha Fund.<br><br>
-            Je peux analyser vos <strong>performances</strong>, votre <strong>allocation</strong>, vos <strong>risques de concentration</strong>, simuler des <strong>scénarios de marché</strong>, ou répondre à toute question sur votre patrimoine.<br><br>
-            Par quoi commençons-nous ?
-          </div>
-        </div>`:''}
-        ${aiHistory.map(m=>`
-        <div class="ai-msg ${m.role}">
-          <div class="ai-avatar ${m.role==='assistant'?'bot':'user'}">${m.role==='assistant'?'✦':'👤'}</div>
-          <div class="ai-bubble ${m.role==='assistant'?'bot':'user'}">${formatAIMessage(m.content)}</div>
-        </div>`).join('')}
+  <!-- Messages scrollables -->
+  <div class="ai-messages" id="ai-msgs" style="flex:1;overflow-y:auto;min-height:0;padding:0 2px 8px">
+    ${aiHistory.length===0?`
+    <div class="ai-msg">
+      <div class="ai-avatar bot">✦</div>
+      <div class="ai-bubble bot">
+        Bonjour ! Je suis votre Advisor IA avec accès complet à votre portefeuille.<br><br>
+        Je peux analyser vos <strong>performances</strong>, votre <strong>allocation</strong>, vos <strong>risques</strong> ou simuler des <strong>scénarios de marché</strong>.<br><br>
+        Par quoi commençons-nous ?
       </div>
+    </div>`:''}
+    ${aiHistory.map(m=>`
+    <div class="ai-msg ${m.role}">
+      <div class="ai-avatar ${m.role==='assistant'?'bot':'user'}">${m.role==='assistant'?'✦':'👤'}</div>
+      <div class="ai-bubble ${m.role==='assistant'?'bot':'user'}">${formatAIMessage(m.content)}</div>
+    </div>`).join('')}
+  </div>
 
-      <div class="ai-suggestions" id="ai-suggs" style="${aiHistory.length>0?'display:none':''}">
-        ${['📊 Analyse mon allocation actuelle','⚠️ Quels sont mes principaux risques ?','₿ Comment se porte mon exposition crypto ?','🎯 Suis-je bien diversifié ?','📈 Quel est mon bilan YTD ?','💡 Que me conseilles-tu ce mois-ci ?'].map(s=>`<button class="ai-sugg" onclick="sendAI('${s}')">${s}</button>`).join('')}
-      </div>
+  <!-- Suggestions -->
+  <div class="ai-suggestions" id="ai-suggs" style="${aiHistory.length>0?'display:none':'display:flex'};flex-shrink:0;margin:8px 0 4px">
+    ${['📊 Mon allocation','⚠️ Mes risques','₿ Expo crypto','🎯 Diversification','📈 Bilan YTD','💡 Conseils du mois'].map(s=>`<button class="ai-sugg" onclick="sendAI('${s}')">${s}</button>`).join('')}
+  </div>
 
-      <div class="ai-input-row">
-        <textarea class="ai-input" id="ai-in" placeholder="Posez votre question sur votre portefeuille…" rows="2"
-          onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendAIFromInput()}"></textarea>
-        <button class="ai-send" id="ai-btn" onclick="sendAIFromInput()">➤</button>
-      </div>
-      <div style="font-size:8px;color:#2a2a2a;margin-top:6px;text-align:center">Shift+Entrée pour nouvelle ligne · Les données sont transmises à l'API Claude</div>
+  <!-- Input fixé en bas -->
+  <div style="flex-shrink:0;padding-top:8px;border-top:1px solid rgba(255,255,255,0.06)">
+    <div class="ai-input-row">
+      <textarea class="ai-input" id="ai-in" placeholder="Posez votre question…" rows="1"
+        style="min-height:44px;max-height:100px"
+        oninput="this.style.height='44px';this.style.height=Math.min(this.scrollHeight,100)+'px'"
+        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendAIFromInput()}"></textarea>
+      <button class="ai-send" id="ai-btn" onclick="sendAIFromInput()" style="height:44px;align-self:flex-end">➤</button>
     </div>
   </div>
+
 </div>`;
 
   scrollAIChat();
@@ -1852,6 +1859,71 @@ setInterval(()=>{
   setInterval(()=>fetchStocksBackground(),300000);
   // Vérifier snapshot toutes les heures (si app reste ouverte)
   setInterval(autoSnapshot,3600000);
+
+  // ── PULL TO REFRESH ─────────────────────────────────────
+  (function initPTR(){
+    let startY=0,pulling=false,dy=0,ind=null;
+    const THRESHOLD=70;
+
+    function mkInd(){
+      if(ind)return;
+      ind=document.createElement('div');
+      ind.innerHTML='<span id="ptr-icon">↓</span>';
+      Object.assign(ind.style,{
+        position:'fixed',top:'0',left:'50%',
+        transform:'translateX(-50%) translateY(-56px)',
+        width:'42px',height:'42px',
+        background:'rgba(247,147,26,0.12)',
+        border:'1px solid rgba(247,147,26,0.25)',
+        borderRadius:'50%',
+        display:'flex',alignItems:'center',justifyContent:'center',
+        fontSize:'20px',color:'#F7931A',
+        zIndex:'9999',willChange:'transform',
+        boxShadow:'0 4px 16px rgba(247,147,26,0.15)',
+        pointerEvents:'none',
+      });
+      document.body.appendChild(ind);
+    }
+
+    document.addEventListener('touchstart',e=>{
+      if(window.scrollY===0&&e.touches.length===1){
+        startY=e.touches[0].clientY; pulling=true; mkInd();
+      }
+    },{passive:true});
+
+    document.addEventListener('touchmove',e=>{
+      if(!pulling||!ind)return;
+      dy=Math.max(0,e.touches[0].clientY-startY);
+      const p=Math.min(dy/THRESHOLD,1);
+      const ty=-56+dy*0.42;
+      ind.style.transform='translateX(-50%) translateY('+ty+'px) rotate('+(p*180)+'deg)';
+      ind.style.opacity=String(Math.min(p*1.4,1));
+      ind.style.background=p>=1?'rgba(247,147,26,0.22)':'rgba(247,147,26,0.10)';
+    },{passive:true});
+
+    document.addEventListener('touchend',async e=>{
+      if(!pulling||!ind)return;
+      const releaseDy=e.changedTouches[0].clientY-startY;
+      pulling=false;
+      if(releaseDy>=THRESHOLD){
+        const icon=ind.querySelector('#ptr-icon');
+        if(icon)icon.style.cssText='display:inline-block;width:18px;height:18px;border:2.5px solid rgba(247,147,26,0.3);border-top-color:#F7931A;border-radius:50%;animation:sp 0.7s linear infinite;font-size:0';
+        ind.style.transition='transform 0.2s cubic-bezier(0.23,1,0.32,1)';
+        ind.style.transform='translateX(-50%) translateY(16px)';
+        await loadData();
+        render();
+        fetchCrypto();
+        fetchMarketIndices();
+        fetchStocksBackground();
+      }
+      ind.style.transition='transform 0.3s ease,opacity 0.25s ease';
+      ind.style.transform='translateX(-50%) translateY(-56px)';
+      ind.style.opacity='0';
+      setTimeout(()=>{if(ind){ind.remove();ind=null;}},320);
+      dy=0;
+    },{passive:true});
+  })();
+
 })();
 </script>
 </body>
