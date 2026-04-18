@@ -1847,25 +1847,7 @@ setInterval(()=>{
 },1000);
 
 // ── INIT ──────────────────────────────────────────────────
-(async()=>{
-  initTheme();
-  await loadData();          // Supabase ~300ms
-  render();                  // Affichage immédiat
-  fetchCrypto();
-  fetchMarketIndices();
-  fetchStethApr();
-  setInterval(fetchCrypto,60000);
-  setInterval(fetchMarketIndices,300000);
-  setInterval(fetchStethApr,3600000); // MAJ toutes les heures
-  setTimeout(()=>{
-    fetchStocksBackground();
-    setTimeout(autoSnapshot,5000);
-  },3000);
-  setInterval(()=>fetchStocksBackground(),300000);
-  // Vérifier snapshot toutes les heures (si app reste ouverte)
-  setInterval(autoSnapshot,3600000);
 
-  
 // ── NEWS IA ───────────────────────────────────────────────
 let newsCache={}; // ticker -> {articles, ts}
 let newsLoading=false;
@@ -2025,6 +2007,25 @@ function showNewsTicker(ticker){
   loadNewsTicker(ticker);
 }
 
+(async()=>{
+  initTheme();
+  await loadData();          // Supabase ~300ms
+  render();                  // Affichage immédiat
+  fetchCrypto();
+  fetchMarketIndices();
+  fetchStethApr();
+  setInterval(fetchCrypto,60000);
+  setInterval(fetchMarketIndices,300000);
+  setInterval(fetchStethApr,3600000); // MAJ toutes les heures
+  setTimeout(()=>{
+    fetchStocksBackground();
+    setTimeout(autoSnapshot,5000);
+  },3000);
+  setInterval(()=>fetchStocksBackground(),300000);
+  // Vérifier snapshot toutes les heures (si app reste ouverte)
+  setInterval(autoSnapshot,3600000);
+
+  
 // ── PULL TO REFRESH ─────────────────────────────────────
   (function initPTR(){
     let startY=0,pulling=false,dy=0,ind=null;
