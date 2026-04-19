@@ -2186,23 +2186,57 @@ const LEARN_THEMES=[
   {id:'strategie',label:'Stratégie',icon:'🎯',topics:['allocation actifs','DCA','rééquilibrage','horizon placement','gestion des risques']},
 ];
 
+// ── LEARN PERSISTENT STATE ───────────────────────────────
+const LEARN_STORAGE_KEY = 'guedj-learn-state';
+
 let learnState={
   level:'debutant',
   theme:null,
-  session:[],     // [{role, content, isQuestion, isCorrect, points}]
+  session:[],
   score:0,
   streak:0,
   totalQuestions:0,
   correctAnswers:0,
-  phase:'home',   // 'home' | 'chat'
+  phase:'home',
+  history:[], // [{themeId, date, score, questions}] - historique des sessions
+  topicsAsked:[], // sujets déjà posés pour éviter répétitions
 };
 
-function renderLearn(){
+async function saveLearnState(){
+  try{
+    const toSave={
+      level:learnState.level,
+      score:learnState.score,
+      streak:learnState.streak,
+      totalQuestions:learnState.totalQuestions,
+      correctAnswers:learnState.correctAnswers,
+      history:learnState.history||[],
+      topicsAsked:learnState.topicsAsked||[],
+    };
+    await window.storage.set(LEARN_STORAGE_KEY, JSON.stringify(toSave));
+  }catch(e){console.warn('saveLearnState:',e);}
+}
+
+async function loadLearnState(){
+  try{
+    const res=await window.storage.get(LEARN_STORAGE_KEY);
+    if(res&&res.value){
+      const saved=JSON.parse(res.value);
+      Object.assign(learnState,saved);
+    }
+  }catch(e){/* first time, no data yet */}
+}
+
+async function renderLearn(){
+  // Charger les stats sauvegardées à chaque ouverture
+  await loadLearnState();
+
   if(learnState.phase==='chat'){
     renderLearnChat();
     return;
   }
   const lvl=LEARN_LEVELS[learnState.level];
+  const hasSession=learnState.session&&learnState.session.length>0;
   document.getElementById('cnt').innerHTML=`
 <div style="display:flex;flex-direction:column;gap:14px">
 
@@ -2210,10 +2244,11 @@ function renderLearn(){
   <div style="background:linear-gradient(135deg,rgba(167,139,250,0.1),rgba(167,139,250,0.04));border:1px solid rgba(167,139,250,0.2);border-radius:20px;padding:18px 16px">
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
       <div style="width:42px;height:42px;border-radius:14px;background:rgba(167,139,250,0.15);border:1px solid rgba(167,139,250,0.25);display:flex;align-items:center;justify-content:center;font-size:20px">🎓</div>
-      <div>
+      <div style="flex:1">
         <div style="font-size:17px;font-weight:800;color:#fff">Finance Academy</div>
-        <div style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:1px">Apprenez la finance avec un coach IA personnel</div>
+        <div style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:1px">Apprenez la finance avec un coach IA</div>
       </div>
+      <button onclick="resetLearnStats()" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:5px 8px;font-size:9px;color:rgba(255,255,255,0.25);cursor:pointer;font-family:'Inter',sans-serif;-webkit-tap-highlight-color:transparent">Reset</button>
     </div>
     <!-- Stats -->
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
@@ -2230,6 +2265,11 @@ function renderLearn(){
         <div style="font-size:9px;color:rgba(255,255,255,0.3);margin-top:2px">Réussite</div>
       </div>
     </div>
+    ${hasSession?`
+    <!-- Reprendre session -->
+    <button onclick="learnState.phase='chat';renderLearnChat()" style="width:100%;margin-top:12px;background:rgba(167,139,250,0.15);border:1px solid rgba(167,139,250,0.3);border-radius:12px;padding:11px;font-size:13px;font-weight:700;color:#A78BFA;cursor:pointer;font-family:'Inter',sans-serif;-webkit-tap-highlight-color:transparent">
+      ↩ Reprendre la session en cours
+    </button>`:''}
   </div>
 
   <!-- Niveau -->
@@ -2288,6 +2328,15 @@ function renderLearn(){
 </div>`;
 }
 
+
+async function resetLearnStats(){
+  if(!confirm('Remettre les points à zéro ?'))return;
+  learnState.score=0;learnState.streak=0;learnState.totalQuestions=0;
+  learnState.correctAnswers=0;learnState.history=[];learnState.topicsAsked=[];
+  await saveLearnState();
+  renderLearn();
+}
+
 async function startLearnSession(themeId){
   learnState.theme=themeId;
   learnState.session=[];
@@ -2297,30 +2346,49 @@ async function startLearnSession(themeId){
   const lvl=LEARN_LEVELS[learnState.level];
   const portfolio=S.pos.filter(p=>p.assets?.type!=='cash').map(p=>p.assets?.ticker).filter(Boolean).join(', ')||'Bitcoin, ETF CW8';
 
-  // Prompt système
+  // Choisir un topic ALÉATOIRE jamais posé (ou reset si tous déjà vus)
+  let availableTopics=[];
+  if(theme&&theme.topics){
+    const askedInTheme=(learnState.topicsAsked||[]).filter(t=>t.startsWith(themeId+':'));
+    const askedNames=askedInTheme.map(t=>t.split(':')[1]);
+    availableTopics=theme.topics.filter(t=>!askedNames.includes(t));
+    // Si tous les topics ont été vus, reset pour ce thème
+    if(availableTopics.length===0){
+      learnState.topicsAsked=(learnState.topicsAsked||[]).filter(t=>!t.startsWith(themeId+':'));
+      availableTopics=theme.topics;
+    }
+  }
+  // Tirer un topic aléatoire
+  const randomTopic=availableTopics.length>0
+    ? availableTopics[Math.floor(Math.random()*availableTopics.length)]
+    : null;
+
+  // Mémoriser ce topic comme "vu"
+  if(randomTopic&&themeId!=='libre'){
+    if(!learnState.topicsAsked)learnState.topicsAsked=[];
+    learnState.topicsAsked.push(themeId+':'+randomTopic);
+    await saveLearnState();
+  }
+
+  // Prompt avec topic aléatoire imposé
+  const topicInstruction=randomTopic
+    ? `Commence OBLIGATOIREMENT par enseigner le concept de "${randomTopic}". Ne demande pas sur quel sujet commencer.`
+    : 'Choisis toi-même un sujet varié et commence directement.';
+
   const systemPrompt=`Tu es un coach financier pédagogue et bienveillant. Tu enseignes la finance à quelqu'un qui a un portefeuille réel contenant : ${portfolio}.
-Niveau de l'utilisateur : ${lvl.label}.
-${themeId==='libre'?'Mode libre : réponds à toutes les questions de finance.':'Thème : '+(theme?.label||themeId)+'. Topics possibles : '+(theme?.topics||[]).join(', ')+'.'}
+Niveau : ${lvl.label}. ${themeId==='libre'?'Mode libre.':'Thème : '+(theme?.label||themeId)+'.'}
+${topicInstruction}
 
-TON RÔLE :
-1. Explique des concepts financiers de façon claire, avec des exemples concrets liés à son portefeuille réel
-2. Pose UNE question à la fin de chaque message pour vérifier la compréhension
-3. Quand l'utilisateur répond, évalue sa réponse (Correct/Presque/Incorrect), explique, puis enseigne quelque chose de nouveau
-4. Adapte la difficulté au niveau ${lvl.label}
-5. Sois encourageant, utilise des emojis avec modération
-6. Maximum 150 mots par réponse, sois concis
-
-FORMAT DE RÉPONSE :
-- Explication courte (2-3 phrases)
-- Exemple concret lié à son portefeuille si possible
-- Question claire à la fin (précédée de "❓")
-
-Commence par te présenter en 2 phrases et pose ta première question sur le thème "${themeId==='libre'?'la finance en général':theme?.label}".`;
+RÈGLES STRICTES :
+1. Explique le concept en 2-3 phrases simples avec un exemple lié à son portefeuille
+2. Pose UNE question précédée de "❓" pour vérifier la compréhension
+3. À chaque réponse : évalue (Correct/Presque/Incorrect), corrige si besoin, puis passe à un sous-concept différent
+4. Niveau ${lvl.label} : adapte le vocabulaire et la complexité en conséquence
+5. Max 120 mots. Sois direct, pas de formules de politesse.
+6. Réponds TOUJOURS en JSON : {"reply":"...","feedback":"correct|presque|incorrect|none","points":0}`;
 
   renderLearnChat();
-
-  // Appel initial
-  await learnAICall(systemPrompt,[{role:'user',content:'Commence la session'}],true);
+  await learnAICall(systemPrompt,[{role:'user',content:'Commence'}],true);
 }
 
 function renderLearnChat(){
@@ -2478,9 +2546,9 @@ Points : correct=10, presque=5, incorrect=0, none=0`;
 
     // Update score & streak
     if(parsed.feedback==='correct'){learnState.streak++;learnState.correctAnswers++;learnState.score+=parsed.points||10;}
-    else if(parsed.feedback==='presque'){learnState.streak=Math.max(0,learnState.streak-0);learnState.score+=parsed.points||5;}
+    else if(parsed.feedback==='presque'){learnState.score+=parsed.points||5;}
     else if(parsed.feedback==='incorrect'){learnState.streak=0;}
-    if(parsed.feedback!=='none')learnState.totalQuestions++;
+    if(parsed.feedback!=='none'){learnState.totalQuestions++;saveLearnState();}
 
     // Update user msg feedback
     const lastUserIdx=learnState.session.map(m=>m.role).lastIndexOf('user');
