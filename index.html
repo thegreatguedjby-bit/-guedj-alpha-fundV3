@@ -1932,7 +1932,7 @@ Pour les actions/ETFs : parle de résultats, analyse, secteur, macro-économie e
 Varie les sentiments (pas que du positif). Sois précis et crédible.
 Réponds UNIQUEMENT en JSON strict, sans markdown, sans texte avant ou après :
 {"articles":[
-{"title":"titre accrocheur max 10 mots","summary":"2-3 phrases précises et informatives","sentiment":"positive|negative|neutral","source":"Financial Times|Bloomberg|Reuters|Les Echos|BFM Bourse|CoinDesk|L'Agefi","date":"date en français ex: 17 avril 2026"},
+{"title":"titre accrocheur max 10 mots","summary":"2-3 phrases précises et informatives","sentiment":"positive|negative|neutral","source":"Financial Times|Bloomberg|Reuters|Les Echos|BFM Bourse|CoinDesk|L-Agefi","date":"date en français ex: 17 avril 2026"},
 {"title":"...","summary":"...","sentiment":"...","source":"...","date":"..."},
 {"title":"...","summary":"...","sentiment":"...","source":"...","date":"..."}
 ]}`;
@@ -1950,7 +1950,7 @@ Réponds UNIQUEMENT en JSON strict, sans markdown, sans texte avant ou après :
   const data=await resp.json();
   const text=data?.choices?.[0]?.message?.content||'{}';
   try{
-    const clean=text.replace(/```json[\s\S]*?```|```/g,'').trim();
+    const clean=text.replace(/```[a-z]*\n?/g,'').replace(/```/g,'').trim();
     const parsed=JSON.parse(clean);
     return parsed;
   }catch(e){
@@ -2085,11 +2085,11 @@ const LEARN_LEVELS={
 };
 
 const LEARN_THEMES=[
-  {id:'bases',label:'Bases',icon:'📚',topics:['inflation','taux d'intérêt','capitalisation','risque/rendement','liquidité']},
+  {id:'bases',label:'Bases',icon:'📚',topics:['inflation','taux intérêt','capitalisation','risque/rendement','liquidité']},
   {id:'bourse',label:'Bourse',icon:'📊',topics:['actions','ETF','indices','dividendes','PER','bilan comptable']},
   {id:'crypto',label:'Crypto',icon:'₿',topics:['Bitcoin','blockchain','DeFi','staking','volatilité crypto','ETF Bitcoin']},
   {id:'fiscalite',label:'Fiscalité',icon:'🏛️',topics:['PEA','CTO','plus-values','flat tax','IFI','optimisation fiscale']},
-  {id:'strategie',label:'Stratégie',icon:'🎯',topics:['allocation d'actifs','DCA','rééquilibrage','horizon de placement','gestion des risques']},
+  {id:'strategie',label:'Stratégie',icon:'🎯',topics:['allocation actifs','DCA','rééquilibrage','horizon placement','gestion des risques']},
 ];
 
 let learnState={
@@ -2374,7 +2374,7 @@ Points : correct=10, presque=5, incorrect=0, none=0`;
     });
     const data=await resp.json();
     let text=data?.choices?.[0]?.message?.content||'{}';
-    text=text.replace(/```json|```/g,'').trim();
+    text=text.replace(/```[a-z]*/g,'').replace(/```/g,'').trim();
     let parsed={reply:'Désolé, je n\'ai pas pu répondre.',feedback:'none',points:0};
     try{parsed=JSON.parse(text);}catch(e){parsed.reply=text;}
 
@@ -2439,7 +2439,7 @@ async function learnAICall(systemPrompt,messages,isInit){
     });
     const data=await resp.json();
     let text=data?.choices?.[0]?.message?.content||'{}';
-    text=text.replace(/```json|```/g,'').trim();
+    text=text.replace(/```[a-z]*/g,'').replace(/```/g,'').trim();
     let parsed={reply:'Bonjour ! Je suis votre coach financier. Commençons !',feedback:'none',points:0};
     try{parsed=JSON.parse(text);}catch(e){parsed.reply=text;}
 
