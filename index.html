@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Guedj Alpha Fund</title>
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -174,7 +174,7 @@
       background:rgba(255,255,255,0.05);
       border:1px solid rgba(255,255,255,0.1);
       border-radius:12px;padding:12px 14px;
-      font-size:15px;color:#fff;
+      font-size:16px;color:#fff;
       font-family:'Inter',sans-serif;
       outline:none;width:100%;
       transition:border-color 0.15s,background 0.15s;
@@ -263,7 +263,7 @@
       flex:1;background:rgba(255,255,255,0.05);
       border:1px solid rgba(255,255,255,0.1);
       border-radius:16px;padding:13px 16px;
-      font-size:14px;color:#fff;font-family:'Inter',sans-serif;
+      font-size:16px;color:#fff;font-family:'Inter',sans-serif;
       outline:none;resize:none;line-height:1.5;
       transition:border-color 0.15s;-webkit-appearance:none;
     }
@@ -1068,7 +1068,7 @@ function renderPortfolio(){
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
     <div class="ct" style="margin-bottom:0">Positions (${filtered.length}/${all.length}) — <span style="color:#F7931A">${fe(tot())}</span></div>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-      <input id="psearch" class="fi" placeholder="🔍 Rechercher…" style="width:140px;padding:5px 8px;font-size:11px"
+      <input id="psearch" class="fi" placeholder="🔍 Rechercher…" style="width:140px;padding:5px 8px;font-size:16px"
         value="${portfolioSearch}"
         oninput="portfolioSearch=this.value.toLowerCase();renderPortfolio()">
       <button class="btsm" id="rfbtn" onclick="doRefresh()">↻ Prix live</button>
@@ -2264,7 +2264,7 @@ function renderLearnChat(){
     </div>
     <div style="display:flex;gap:8px">
       <textarea id="learn-in" placeholder="Votre réponse…" rows="1"
-        style="flex:1;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:14px;padding:12px 14px;font-size:14px;color:#fff;font-family:'Inter',sans-serif;outline:none;resize:none;line-height:1.4;min-height:44px;max-height:90px;-webkit-appearance:none"
+        style="flex:1;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:14px;padding:12px 14px;font-size:16px;color:#fff;font-family:'Inter',sans-serif;outline:none;resize:none;line-height:1.4;min-height:44px;max-height:90px;-webkit-appearance:none"
         oninput="this.style.height='44px';this.style.height=Math.min(this.scrollHeight,90)+'px'"
         onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendLearnMsgFromInput()}"></textarea>
       <button id="learn-btn" onclick="sendLearnMsgFromInput()" style="background:#A78BFA;border:none;border-radius:14px;padding:12px 16px;cursor:pointer;font-size:16px;height:44px;align-self:flex-end;transition:all 0.15s;-webkit-tap-highlight-color:transparent">➤</button>
