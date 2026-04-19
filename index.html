@@ -56,6 +56,63 @@
     });
   })();
 
+
+  // ── KEYBOARD RESIZE (iOS) ────────────────────────────────
+  // Quand le clavier iPhone apparaît, réduit la zone de chat
+  // et scroll sur le dernier message pour qu'il reste lisible
+  (function handleKeyboard(){
+    if(!window.visualViewport) return;
+
+    function onViewportResize(){
+      const vv = window.visualViewport;
+      const keyboardHeight = window.innerHeight - vv.height - vv.offsetTop;
+      const isKeyboardOpen = keyboardHeight > 100;
+
+      // Ajuster les zones de messages
+      ['ai-msgs','learn-msgs'].forEach(id=>{
+        const el = document.getElementById(id);
+        if(!el) return;
+        if(isKeyboardOpen){
+          // Réduire la hauteur pour laisser place au clavier
+          el.style.maxHeight = (vv.height - 220) + 'px';
+          el.style.overflow = 'auto';
+          // Scroll vers le bas pour voir le dernier message
+          requestAnimationFrame(()=>{ el.scrollTop = el.scrollHeight; });
+        } else {
+          el.style.maxHeight = '';
+        }
+      });
+
+      // Ajuster le container Advisor
+      const advisorWrap = document.querySelector('.ai-chat-wrap');
+      if(advisorWrap){
+        if(isKeyboardOpen){
+          advisorWrap.style.height = (vv.height - 140) + 'px';
+        } else {
+          advisorWrap.style.height = '';
+        }
+      }
+
+      // Ajuster le container Learn
+      const learnWrap = document.getElementById('learn-msgs');
+      if(learnWrap && isKeyboardOpen){
+        // Scroll le dernier message de coaching en haut de la zone visible
+        const lastBot = learnWrap.querySelectorAll('[data-role="bot"]');
+        if(lastBot.length > 0){
+          const last = lastBot[lastBot.length-1];
+          requestAnimationFrame(()=>{
+            last.scrollIntoView({behavior:'smooth', block:'start'});
+          });
+        } else {
+          requestAnimationFrame(()=>{ learnWrap.scrollTop = learnWrap.scrollHeight; });
+        }
+      }
+    }
+
+    window.visualViewport.addEventListener('resize', onViewportResize, {passive:true});
+    window.visualViewport.addEventListener('scroll', onViewportResize, {passive:true});
+  })();
+
 </script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <style>
@@ -1833,7 +1890,9 @@ function formatAIMessage(text){
 function scrollAIChat(){
   requestAnimationFrame(()=>{
     const msgs=document.getElementById('ai-msgs');
-    if(msgs)msgs.scrollTop=msgs.scrollHeight;
+    if(!msgs)return;
+    // Scroll doux vers le bas
+    msgs.scrollTo({top:msgs.scrollHeight,behavior:'smooth'});
   });
 }
 
@@ -2329,7 +2388,7 @@ function learnMsgHTML(m){
   if(isBot){
     // Highlight la question finale
     const formatted=formatLearnMessage(m.content);
-    return`<div style="display:flex;gap:10px;align-items:flex-start;animation:fadeUp 0.2s ease">
+    return`<div data-role="bot" style="display:flex;gap:10px;align-items:flex-start;animation:fadeUp 0.2s ease">
       <div style="width:30px;height:30px;border-radius:50%;background:rgba(167,139,250,0.15);border:1px solid rgba(167,139,250,0.25);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">🎓</div>
       <div style="max-width:88%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:4px 18px 18px 18px;padding:13px 15px;font-size:13px;line-height:1.65;color:rgba(255,255,255,0.88)">${formatted}</div>
     </div>`;
@@ -2356,7 +2415,14 @@ function formatLearnMessage(text){
 function scrollLearnChat(){
   requestAnimationFrame(()=>{
     const el=document.getElementById('learn-msgs');
-    if(el)el.scrollTop=el.scrollHeight;
+    if(!el)return;
+    // Scroll vers le dernier message du coach (la question) plutôt que tout en bas
+    const bots=el.querySelectorAll('[data-role="bot"]');
+    if(bots.length>0){
+      bots[bots.length-1].scrollIntoView({behavior:'smooth',block:'start'});
+    } else {
+      el.scrollTop=el.scrollHeight;
+    }
   });
 }
 
