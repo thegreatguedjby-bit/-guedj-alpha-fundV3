@@ -7,7 +7,56 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Guedj Alpha">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js">
+  // ── ANTI-ZOOM IOS ────────────────────────────────────────
+  // Bloque le zoom au focus sur les inputs (iOS Safari)
+  (function preventIOSZoom(){
+    // Bloquer pinch-to-zoom
+    document.addEventListener('gesturestart', e=>e.preventDefault(), {passive:false});
+    document.addEventListener('gesturechange', e=>e.preventDefault(), {passive:false});
+    document.addEventListener('gestureend', e=>e.preventDefault(), {passive:false});
+
+    // Forcer font-size 16px au focus pour éviter le zoom auto iOS
+    // même si le CSS indique moins (certains navigateurs ignorent le CSS)
+    function fixZoom(el){
+      if(!el)return;
+      const orig=el.style.fontSize;
+      el.addEventListener('focus',()=>{
+        document.querySelector('meta[name="viewport"]').setAttribute('content',
+          'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
+        el.style.fontSize='16px';
+      },{passive:true});
+      el.addEventListener('blur',()=>{
+        el.style.fontSize=orig||'';
+      },{passive:true});
+    }
+
+    // Observer pour attraper tous les inputs/textareas même créés dynamiquement
+    const observer=new MutationObserver(()=>{
+      document.querySelectorAll('input,textarea,select').forEach(el=>{
+        if(!el.dataset.zoomFixed){
+          el.dataset.zoomFixed='1';
+          fixZoom(el);
+          // Force 16px direct dans le style
+          if(parseFloat(getComputedStyle(el).fontSize)<16){
+            el.style.fontSize='16px';
+          }
+        }
+      });
+    });
+    observer.observe(document.body,{childList:true,subtree:true});
+
+    // Apply to existing inputs immediately
+    document.querySelectorAll('input,textarea,select').forEach(el=>{
+      el.dataset.zoomFixed='1';
+      fixZoom(el);
+      if(parseFloat(getComputedStyle(el).fontSize)<16){
+        el.style.fontSize='16px';
+      }
+    });
+  })();
+
+</script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap');
