@@ -58,59 +58,45 @@
 
 
   // ── KEYBOARD RESIZE (iOS) ────────────────────────────────
-  // Quand le clavier iPhone apparaît, réduit la zone de chat
-  // et scroll sur le dernier message pour qu'il reste lisible
   (function handleKeyboard(){
+    // Initialise --vh avec la vraie hauteur visible
+    function setVh(){
+      const vv = window.visualViewport || {height: window.innerHeight, offsetTop: 0};
+      document.documentElement.style.setProperty('--vh', vv.height * 0.01 + 'px');
+    }
+    setVh();
+
     if(!window.visualViewport) return;
 
-    function onViewportResize(){
+    function onResize(){
       const vv = window.visualViewport;
-      const keyboardHeight = window.innerHeight - vv.height - vv.offsetTop;
-      const isKeyboardOpen = keyboardHeight > 100;
+      // Met à jour --vh CSS avec la hauteur visible (hors clavier)
+      document.documentElement.style.setProperty('--vh', vv.height * 0.01 + 'px');
+      // Hauteur visible = viewport visuel (exclut le clavier)
+      const visibleH = vv.height;
+      const offsetTop = vv.offsetTop;
 
-      // Ajuster les zones de messages
+      // Tous les wrappers de chat
       ['ai-msgs','learn-msgs'].forEach(id=>{
         const el = document.getElementById(id);
         if(!el) return;
-        if(isKeyboardOpen){
-          // Réduire la hauteur pour laisser place au clavier
-          el.style.maxHeight = (vv.height - 220) + 'px';
-          el.style.overflow = 'auto';
-          // Scroll vers le bas pour voir le dernier message
-          requestAnimationFrame(()=>{ el.scrollTop = el.scrollHeight; });
-        } else {
-          el.style.maxHeight = '';
+        // Recalcule la hauteur disponible pour les messages
+        const inputRow = el.closest('[style*="flex-direction:column"]') || el.parentElement;
+        const inputEl = document.getElementById(id==='ai-msgs'?'ai-in':'learn-in');
+        const inputH = inputEl ? (inputEl.closest('div[style*="flex-shrink:0"]')?.offsetHeight || 80) : 80;
+        const headerH = 60;
+        const newH = visibleH - inputH - headerH - offsetTop - 20;
+        if(newH > 50){
+          el.style.height = newH + 'px';
+          el.style.maxHeight = newH + 'px';
         }
+        // Scroll vers le bas
+        requestAnimationFrame(()=>{ el.scrollTop = el.scrollHeight; });
       });
-
-      // Ajuster le container Advisor
-      const advisorWrap = document.querySelector('.ai-chat-wrap');
-      if(advisorWrap){
-        if(isKeyboardOpen){
-          advisorWrap.style.height = (vv.height - 140) + 'px';
-        } else {
-          advisorWrap.style.height = '';
-        }
-      }
-
-      // Ajuster le container Learn
-      const learnWrap = document.getElementById('learn-msgs');
-      if(learnWrap && isKeyboardOpen){
-        // Scroll le dernier message de coaching en haut de la zone visible
-        const lastBot = learnWrap.querySelectorAll('[data-role="bot"]');
-        if(lastBot.length > 0){
-          const last = lastBot[lastBot.length-1];
-          requestAnimationFrame(()=>{
-            last.scrollIntoView({behavior:'smooth', block:'start'});
-          });
-        } else {
-          requestAnimationFrame(()=>{ learnWrap.scrollTop = learnWrap.scrollHeight; });
-        }
-      }
     }
 
-    window.visualViewport.addEventListener('resize', onViewportResize, {passive:true});
-    window.visualViewport.addEventListener('scroll', onViewportResize, {passive:true});
+    window.visualViewport.addEventListener('resize', onResize, {passive:true});
+    window.visualViewport.addEventListener('scroll', onResize, {passive:true});
   })();
 
 </script>
@@ -1815,7 +1801,7 @@ Snapshots historiques disponibles : ${snapsF.length} points de données.`;
 
 function renderAdvisor(){
   document.getElementById('cnt').innerHTML=`
-<div style="display:flex;flex-direction:column;gap:0;height:calc(100dvh - 130px);overflow:hidden">
+<div style="display:flex;flex-direction:column;gap:0;height:calc(var(--vh,1vh)*100 - 130px);overflow:hidden">
 
   <!-- Header Advisor -->
   <div style="background:rgba(247,147,26,0.07);border:1px solid rgba(247,147,26,0.15);border-radius:18px;padding:14px 16px;margin-bottom:12px;flex-shrink:0">
@@ -2342,7 +2328,7 @@ function renderLearnChat(){
   const lvl=LEARN_LEVELS[learnState.level];
 
   document.getElementById('cnt').innerHTML=`
-<div style="display:flex;flex-direction:column;height:calc(100dvh - 130px);overflow:hidden;gap:0">
+<div style="display:flex;flex-direction:column;height:calc(var(--vh,1vh)*100 - 130px);overflow:hidden;gap:0">
 
   <!-- Header session -->
   <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-shrink:0">
