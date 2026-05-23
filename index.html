@@ -2177,13 +2177,28 @@ function czFile(file){
   if(!file)return;
   var reader=new FileReader();
   reader.onload=function(ev){
-    var b64=ev.target.result.split(',')[1];
-    var mime=file.type||'image/jpeg';
-    document.getElementById('cz-img').src=ev.target.result;
-    document.getElementById('cz-preview').style.display='block';
-    document.getElementById('cz-zone').style.display='none';
-    document.getElementById('cz-loading').style.display='block';
-    czAnalyze(b64,mime);
+    // Compresser l'image avant envoi (max 800px, qualité 0.7)
+    var img=new Image();
+    img.onload=function(){
+      var canvas=document.createElement('canvas');
+      var maxSize=800;
+      var w=img.width, h=img.height;
+      if(w>maxSize||h>maxSize){
+        if(w>h){h=Math.round(h*maxSize/w);w=maxSize;}
+        else{w=Math.round(w*maxSize/h);h=maxSize;}
+      }
+      canvas.width=w; canvas.height=h;
+      var ctx=canvas.getContext('2d');
+      ctx.drawImage(img,0,0,w,h);
+      var compressed=canvas.toDataURL('image/jpeg',0.7);
+      var b64=compressed.split(',')[1];
+      document.getElementById('cz-img').src=ev.target.result;
+      document.getElementById('cz-preview').style.display='block';
+      document.getElementById('cz-zone').style.display='none';
+      document.getElementById('cz-loading').style.display='block';
+      czAnalyze(b64,'image/jpeg');
+    };
+    img.src=ev.target.result;
   };
   reader.readAsDataURL(file);
 }
